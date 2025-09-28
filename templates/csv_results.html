@@ -1,226 +1,357 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}CSV Analysis Results - NIKA{% endblock %}
+{% block title %}CSV Results - NIKA{% endblock %}
+
+{% block page_title %}CSV Analysis Results{% endblock %}
+
+{% block page_description %}Geochemical data anomaly detection results{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center py-3">
-                <div>
-                    <h1 class="h3 mb-1">CSV Analysis Results</h1>
-                    <p class="text-muted">File: {{ results.file_info.filename }}</p>
+<!-- Results Header -->
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h3 class="text-xl font-semibold mb-1">Analysis Complete</h3>
+        <p class="text-muted">File: {{ results.file_info.filename|default:"uploaded_data.csv" }}</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{% url 'download_report' %}?type=csv" class="btn btn-success">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Download Report
+        </a>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="metrics-grid mb-8">
+    <div class="metric-card">
+        <div class="metric-value">{{ results.metrics.total_rows|default:0 }}</div>
+        <div class="metric-label">Total Data Points</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ results.metrics.anomalies_found|default:0 }}</div>
+        <div class="metric-label">Anomalies Detected</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ results.metrics.confidence_score|default:0 }}%</div>
+        <div class="metric-label">Average Confidence</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ results.processing_time|default:"< 1s" }}</div>
+        <div class="metric-label">Processing Time</div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <!-- Charts Column -->
+    <div class="xl:col-span-2 space-y-6">
+        <!-- Anomaly Distribution Chart -->
+        <div class="card">
+            <div class="card-header">
+                <div class="flex justify-between items-center">
+                    <h4 class="card-title">Anomaly Distribution</h4>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-secondary">
+                            <i data-lucide="settings" class="w-3 h-3"></i>
+                        </button>
+                        <button class="btn btn-sm btn-secondary">
+                            <i data-lucide="download" class="w-3 h-3"></i>
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <a href="{% url 'download_report' %}?type=csv" class="btn btn-success me-2">
-                        <i class="fas fa-download"></i> Download PDF Report
-                    </a>
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
-                    </a>
+            </div>
+            <div class="card-content">
+                <div class="chart-container">
+                    <canvas id="distribution-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Geographic Map -->
+        <div class="card">
+            <div class="card-header">
+                <div class="flex justify-between items-center">
+                    <h4 class="card-title">Geographic Distribution</h4>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-secondary">
+                            <i data-lucide="layers" class="w-3 h-3"></i>
+                            Layers
+                        </button>
+                        <button class="btn btn-sm btn-secondary">
+                            <i data-lucide="maximize" class="w-3 h-3"></i>
+                            Fullscreen
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content p-0">
+                <div class="map-container" id="results-map"></div>
+            </div>
+        </div>
+        
+        <!-- Detailed Analysis -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Statistical Summary</h4>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-primary">{{ results.stats.mean_value|floatformat:2|default:"N/A" }}</div>
+                        <div class="text-sm text-muted">Mean Value</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-accent">{{ results.stats.std_deviation|floatformat:2|default:"N/A" }}</div>
+                        <div class="text-sm text-muted">Std Deviation</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-warning">{{ results.stats.outliers|default:"N/A" }}</div>
+                        <div class="text-sm text-muted">Outliers</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-success">{{ results.stats.data_quality|floatformat:1|default:"N/A" }}%</div>
+                        <div class="text-sm text-muted">Data Quality</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Sidebar Column -->
+    <div class="space-y-6">
+        <!-- File Information -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">File Information</h4>
+            </div>
+            <div class="card-content space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Filename:</span>
+                    <span class="font-medium truncate ml-2">{{ results.file_info.filename|default:"uploaded_data.csv" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">File Size:</span>
+                    <span class="font-medium">{{ results.file_info.size|filesizeformat|default:"Unknown" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Rows:</span>
+                    <span class="font-medium">{{ results.metrics.total_rows|default:"0" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Columns:</span>
+                    <span class="font-medium">{{ results.metrics.total_columns|default:"0" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Processing Time:</span>
+                    <span class="font-medium">{{ results.processing_time|default:"< 1s" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analysis Parameters -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Analysis Parameters</h4>
+            </div>
+            <div class="card-content space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Algorithm:</span>
+                    <span class="font-medium">{{ results.parameters.algorithm|default:"ML-Enhanced" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Sensitivity:</span>
+                    <span class="font-medium">{{ results.parameters.sensitivity|default:"Medium" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Threshold:</span>
+                    <span class="font-medium">{{ results.parameters.threshold|default:"95%" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Quick Actions</h4>
+            </div>
+            <div class="card-content space-y-3">
+                <button class="btn btn-primary w-full">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    Re-analyze with Different Parameters
+                </button>
+                <button class="btn btn-secondary w-full">
+                    <i data-lucide="share" class="w-4 h-4"></i>
+                    Share Results
+                </button>
+                <button class="btn btn-accent w-full" onclick="showTab('comparison')">
+                    <i data-lucide="git-compare" class="w-4 h-4"></i>
+                    Compare with Image Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Messages -->
-    {% if messages %}
-        <div class="row">
-            <div class="col-12">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<!-- Anomalies List -->
+{% if results.anomalies %}
+<div class="mt-8">
+    <div class="card">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <h4 class="card-title">Detected Anomalies ({{ results.anomalies|length }})</h4>
+                <div class="flex gap-2">
+                    <select class="form-select text-sm">
+                        <option>All Severities</option>
+                        <option>High</option>
+                        <option>Medium</option>
+                        <option>Low</option>
+                    </select>
+                    <button class="btn btn-sm btn-secondary">
+                        <i data-lucide="filter" class="w-3 h-3"></i>
+                        Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-content">
+            <div class="grid gap-4">
+                {% for anomaly in results.anomalies %}
+                <div class="card border-l-4 {% if anomaly.severity == 'High' %}border-l-destructive{% elif anomaly.severity == 'Medium' %}border-l-warning{% else %}border-l-success{% endif %}">
+                    <div class="card-content p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h5 class="font-semibold">{{ anomaly.type }}</h5>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium {% if anomaly.severity == 'High' %}bg-destructive text-destructive-foreground{% elif anomaly.severity == 'Medium' %}bg-warning text-warning-foreground{% else %}bg-success text-success-foreground{% endif %}">
+                                    {{ anomaly.severity }}
+                                </span>
+                                <span class="text-sm font-medium">{{ anomaly.confidence }}%</span>
+                            </div>
+                        </div>
+                        <p class="text-muted text-sm mb-3">{{ anomaly.description }}</p>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span class="text-muted">Row:</span>
+                                <span class="font-medium ml-1">{{ anomaly.row|default:"N/A" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-muted">Latitude:</span>
+                                <span class="font-medium ml-1">{{ anomaly.latitude|floatformat:4|default:"N/A" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-muted">Longitude:</span>
+                                <span class="font-medium ml-1">{{ anomaly.longitude|floatformat:4|default:"N/A" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-muted">Value:</span>
+                                <span class="font-medium ml-1">{{ anomaly.value|floatformat:2|default:"N/A" }}</span>
+                            </div>
+                        </div>
                     </div>
+                </div>
                 {% endfor %}
             </div>
         </div>
-    {% endif %}
-
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Total Records</h5>
-                    <h2 class="display-6">{{ results.metrics.total_records|floatformat:0 }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Anomalies Found</h5>
-                    <h2 class="display-6">{{ results.metrics.anomalies_detected }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Processing Time</h5>
-                    <h2 class="display-6">{{ results.metrics.processing_time }}s</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">F1 Score</h5>
-                    <h2 class="display-6">{{ results.metrics.nika_metrics.f1_score }}</h2>
-                </div>
-            </div>
-        </div>
     </div>
-
-    <!-- Performance Comparison -->
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">📊 Performance Comparison: NIKA vs Baseline</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-muted">Baseline Methods</h6>
-                            <ul class="list-unstyled">
-                                <li><strong>F1 Score:</strong> {{ results.metrics.baseline_metrics.f1_score }}</li>
-                                <li><strong>Precision:</strong> {{ results.metrics.baseline_metrics.precision }}</li>
-                                <li><strong>Recall:</strong> {{ results.metrics.baseline_metrics.recall }}</li>
-                                <li><strong>Accuracy:</strong> {{ results.metrics.baseline_metrics.accuracy }}</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-success">NIKA Advanced Detection</h6>
-                            <ul class="list-unstyled">
-                                <li><strong>F1 Score:</strong> <span class="text-success">{{ results.metrics.nika_metrics.f1_score }}</span> 
-                                    <small class="badge bg-success">+{{ results.metrics.improvement_percentage.f1_score }}%</small></li>
-                                <li><strong>Precision:</strong> <span class="text-success">{{ results.metrics.nika_metrics.precision }}</span></li>
-                                <li><strong>Recall:</strong> <span class="text-success">{{ results.metrics.nika_metrics.recall }}</span></li>
-                                <li><strong>Accuracy:</strong> <span class="text-success">{{ results.metrics.nika_metrics.accuracy }}</span></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">📈 Data Quality</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <small class="text-muted">Completeness</small>
-                        <div class="progress">
-                            <div class="progress-bar" style="width: {{ results.metrics.data_quality.completeness|floatformat:0 }}%"></div>
-                        </div>
-                        <small>{{ results.metrics.data_quality.completeness|floatformat:1 }}%</small>
-                    </div>
-                    <div class="mb-2">
-                        <small class="text-muted">Consistency</small>
-                        <div class="progress">
-                            <div class="progress-bar bg-success" style="width: {{ results.metrics.data_quality.consistency|floatformat:0 }}%"></div>
-                        </div>
-                        <small>{{ results.metrics.data_quality.consistency|floatformat:1 }}%</small>
-                    </div>
-                    <div class="mb-2">
-                        <small class="text-muted">Validity</small>
-                        <div class="progress">
-                            <div class="progress-bar bg-info" style="width: {{ results.metrics.data_quality.validity|floatformat:0 }}%"></div>
-                        </div>
-                        <small>{{ results.metrics.data_quality.validity|floatformat:1 }}%</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Anomalies Table -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">🚨 Detected Anomalies</h5>
-                </div>
-                <div class="card-body">
-                    {% if results.anomalies %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Type</th>
-                                        <th>Severity</th>
-                                        <th>Confidence</th>
-                                        <th>Timestamp</th>
-                                        <th>Affected Columns</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for anomaly in results.anomalies %}
-                                        <tr>
-                                            <td><code>{{ anomaly.id }}</code></td>
-                                            <td>{{ anomaly.type }}</td>
-                                            <td>
-                                                <span class="badge 
-                                                    {% if anomaly.severity == 'Critical' %}bg-danger
-                                                    {% elif anomaly.severity == 'High' %}bg-warning
-                                                    {% elif anomaly.severity == 'Medium' %}bg-info
-                                                    {% else %}bg-secondary{% endif %}">
-                                                    {{ anomaly.severity }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="progress me-2" style="width: 60px; height: 8px;">
-                                                        <div class="progress-bar bg-success" 
-                                                             style="width: {{ anomaly.confidence|floatformat:0 }}%"></div>
-                                                    </div>
-                                                    <small>{{ anomaly.confidence|floatformat:3 }}</small>
-                                                </div>
-                                            </td>
-                                            <td><small>{{ anomaly.timestamp }}</small></td>
-                                            <td>
-                                                {% for column in anomaly.affected_columns %}
-                                                    <span class="badge bg-light text-dark">{{ column }}</span>
-                                                {% endfor %}
-                                            </td>
-                                            <td><small>{{ anomaly.description }}</small></td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
-                            <h5>No Anomalies Detected</h5>
-                            <p class="text-muted">Your data appears to be clean and normal.</p>
-                        </div>
-                    {% endif %}
+</div>
+{% else %}
+<div class="mt-8">
+    <div class="card">
+        <div class="card-content">
+            <div class="flex items-center justify-center py-8 text-muted">
+                <div class="text-center">
+                    <i data-lucide="check-circle" class="w-16 h-16 mx-auto mb-4 text-success opacity-50"></i>
+                    <h3 class="text-xl font-medium mb-2 text-success">No Anomalies Detected</h3>
+                    <p>Your data appears to be within normal parameters</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
-{% block extra_css %}
-.progress {
-    height: 8px;
-}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize results map
+    if (typeof L !== 'undefined') {
+        const map = L.map('results-map').setView([{{ results.center.lat|default:40.7128 }}, {{ results.center.lng|default:-74.0060 }}], {{ results.zoom|default:10 }});
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Add anomaly markers
+        {% if results.anomalies %}
+        const anomalies = {{ results.anomalies|safe }};
+        anomalies.forEach(function(anomaly) {
+            if (anomaly.latitude && anomaly.longitude) {
+                const color = anomaly.severity === 'High' ? '#ef4444' : 
+                             anomaly.severity === 'Medium' ? '#f59e0b' : '#10b981';
+                
+                const marker = L.circleMarker([anomaly.latitude, anomaly.longitude], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.7,
+                    radius: 8
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <strong>${anomaly.type}</strong><br>
+                    ${anomaly.description}<br>
+                    <strong>Confidence:</strong> ${anomaly.confidence}%<br>
+                    <strong>Severity:</strong> ${anomaly.severity}
+                `);
+            }
+        });
+        {% endif %}
+    }
+    
+    // Initialize distribution chart
+    if (typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('distribution-chart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Normal Data', 'High Severity', 'Medium Severity', 'Low Severity'],
+                    datasets: [{
+                        data: [
+                            {{ results.metrics.normal_count|default:0 }},
+                            {{ results.metrics.high_severity|default:0 }},
+                            {{ results.metrics.medium_severity|default:0 }},
+                            {{ results.metrics.low_severity|default:0 }}
+                        ],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#6366f1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--foreground'),
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
 
-.table th {
-    border-top: none;
-    font-weight: 600;
-    font-size: 0.875rem;
+// Global function for comparison navigation
+function showTab(tabId) {
+    window.location.href = '{% url "dashboard" %}#' + tabId;
 }
-
-.badge {
-    font-size: 0.75rem;
-}
+</script>
 {% endblock %}

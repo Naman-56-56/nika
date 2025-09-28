@@ -1,417 +1,256 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Dashboard - NIKA{% endblock %}
 
+{% block page_title %}NIKA Dashboard{% endblock %}
+
+{% block page_description %}Upload and analyze geochemical data and cave/mine images{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <header class="text-center py-5 bg-gradient-to-r from-blue-600 to-purple-600 text-white mb-4">
-                <h1 class="display-4 fw-bold text-white">NIKA – Intelligent Anomaly Mapping</h1>
-                <p class="lead text-white opacity-90">Advanced anomaly detection and mapping system</p>
-            </header>
+<!-- Tab System -->
+<div class="tabs">
+    <div class="tab-list">
+        <button class="tab-button active" data-tab="upload">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            Upload Data
+        </button>
+        <button class="tab-button" data-tab="csv-results">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            CSV Results
+        </button>
+        <button class="tab-button" data-tab="image-results">
+            <i data-lucide="image" class="w-4 h-4"></i>
+            Image Results
+        </button>
+        <button class="tab-button" data-tab="comparison">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            Comparison
+        </button>
+    </div>
+</div>
+
+<!-- Upload Tab -->
+<div id="upload" class="tab-content active">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <!-- CSV Upload Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Upload Geochemical CSV</h3>
+                        <p class="card-description">Upload your geological survey data for anomaly detection</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-content">
+                <form method="post" action="{% url 'upload_csv' %}" enctype="multipart/form-data" id="csv-upload-form">
+                    {% csrf_token %}
+                    
+                    <!-- File Upload Area -->
+                    <div class="upload-area" data-file-type="csv">
+                        <div class="flex flex-col items-center gap-4">
+                            <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                                <i data-lucide="upload-cloud" class="w-8 h-8 text-muted-foreground"></i>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-lg font-medium mb-1">Drop your CSV file here</p>
+                                <p class="text-muted text-sm">or <span class="text-primary cursor-pointer hover:underline">browse files</span></p>
+                            </div>
+                            <input type="file" name="csv_file" accept=".csv" class="hidden" id="csv-file-input" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress mt-4" style="display: none;">
+                        <div class="progress-bar"></div>
+                    </div>
+                    
+                    <!-- File Info -->
+                    <div id="csv-file-info" class="mt-4 p-3 bg-muted rounded-lg hidden">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                <span id="csv-file-name" class="font-medium"></span>
+                            </div>
+                            <span id="csv-file-size" class="text-sm text-muted"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-accent w-full mt-6" disabled id="csv-submit-btn">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        Process CSV Data
+                    </button>
+                </form>
+                
+                <!-- Requirements -->
+                <div class="mt-6 p-4 bg-card border border-border rounded-lg">
+                    <h5 class="font-medium mb-2 text-sm">CSV Requirements:</h5>
+                    <ul class="text-sm text-muted space-y-1">
+                        <li>• Include latitude, longitude columns</li>
+                        <li>• Chemical composition data (elements, compounds)</li>
+                        <li>• Maximum file size: 50MB</li>
+                        <li>• Supported format: .csv</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Image Upload Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-info rounded-lg flex items-center justify-center">
+                        <i data-lucide="image" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Upload Cave/Mine Image</h3>
+                        <p class="card-description">Upload geological images for visual anomaly detection</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-content">
+                <form method="post" action="{% url 'upload_image' %}" enctype="multipart/form-data" id="image-upload-form">
+                    {% csrf_token %}
+                    
+                    <!-- File Upload Area -->
+                    <div class="upload-area" data-file-type="image">
+                        <div class="flex flex-col items-center gap-4">
+                            <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                                <i data-lucide="image" class="w-8 h-8 text-muted-foreground"></i>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-lg font-medium mb-1">Drop your image here</p>
+                                <p class="text-muted text-sm">or <span class="text-primary cursor-pointer hover:underline">browse files</span></p>
+                            </div>
+                            <input type="file" name="image_file" accept="image/*" class="hidden" id="image-file-input" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress mt-4" style="display: none;">
+                        <div class="progress-bar"></div>
+                    </div>
+                    
+                    <!-- File Info -->
+                    <div id="image-file-info" class="mt-4 p-3 bg-muted rounded-lg hidden">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                                <span id="image-file-name" class="font-medium"></span>
+                            </div>
+                            <span id="image-file-size" class="text-sm text-muted"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-info w-full mt-6" disabled id="image-submit-btn">
+                        <i data-lucide="scan" class="w-4 h-4"></i>
+                        Analyze Image
+                    </button>
+                </form>
+                
+                <!-- Requirements -->
+                <div class="mt-6 p-4 bg-card border border-border rounded-lg">
+                    <h5 class="font-medium mb-2 text-sm">Image Requirements:</h5>
+                    <ul class="text-sm text-muted space-y-1">
+                        <li>• Supported formats: JPG, PNG, TIFF</li>
+                        <li>• High resolution recommended</li>
+                        <li>• Maximum file size: 50MB</li>
+                        <li>• Clear geological features</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="h4 mb-4">Dashboard</h2>
-                    <p class="text-muted">Welcome to NIKA's intelligent anomaly mapping dashboard.</p>
-                    
-                    <div class="row mt-4">
-                        <div class="col-md-4">
-                            <div class="card bg-primary text-white h-100">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Total Scans</h5>
-                                    <h2 class="display-6">0</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-warning text-white h-100">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Anomalies Detected</h5>
-                                    <h2 class="display-6">0</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-success text-white h-100">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">System Status</h5>
-                                    <h2 class="display-6">Online</h2>
-                                </div>
-                            </div>
-                        </div>
+</div>
+
+<!-- CSV Results Tab -->
+<div id="csv-results" class="tab-content">
+    <div class="space-y-6">
+        <!-- Metrics Overview -->
+        <div id="csv-metrics" class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">0</div>
+                <div class="metric-label">Files Processed</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">0</div>
+                <div class="metric-label">Anomalies Found</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">0%</div>
+                <div class="metric-label">Confidence Score</div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Anomaly Distribution Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Anomaly Distribution</h4>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="anomaly-chart"></canvas>
                     </div>
-                    
-                    <!-- Upload Sections -->
-                    <div class="row mt-5">
-                        <div class="col-lg-6">
-                            <div class="card h-100">
-                                <div class="card-header bg-info text-white">
-                                    <h5 class="mb-0">📊 CSV Data Upload</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p class="text-muted mb-4">Upload CSV files for data analysis and anomaly detection.</p>
-                                    <form method="post" enctype="multipart/form-data" id="csvUploadForm" action="{% url 'upload_csv' %}">
-                                        {% csrf_token %}
-                                        <div class="mb-3">
-                                            <input type="file" 
-                                                   class="filepond-csv" 
-                                                   name="csv_file" 
-                                                   accept=".csv"
-                                                   data-allow-file-type-validation="true"
-                                                   data-accepted-file-types="text/csv">
-                                        </div>
-                                        <button type="submit" class="btn btn-info w-100">
-                                            <i class="fas fa-upload"></i> Analyze CSV Data
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-6">
-                            <div class="card h-100">
-                                <div class="card-header bg-success text-white">
-                                    <h5 class="mb-0">🖼️ Image Upload</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p class="text-muted mb-4">Upload images for visual anomaly detection and analysis.</p>
-                                    <form method="post" enctype="multipart/form-data" id="imageUploadForm" action="{% url 'upload_image' %}">
-                                        {% csrf_token %}
-                                        <div class="mb-3">
-                                            <input type="file" 
-                                                   class="filepond-image" 
-                                                   name="image_file" 
-                                                   accept="image/*"
-                                                   data-allow-file-type-validation="true"
-                                                   data-accepted-file-types="image/jpeg, image/png, image/gif, image/bmp, image/webp">
-                                        </div>
-                                        <button type="submit" class="btn btn-success w-100">
-                                            <i class="fas fa-search"></i> Analyze Image
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+                </div>
+            </div>
+            
+            <!-- Trend Analysis Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Detection Trends</h4>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="trend-chart"></canvas>
                     </div>
-                    
-                    <!-- Results Tabs Section -->
-                    <div class="row mt-5">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <ul class="nav nav-tabs card-header-tabs" id="resultsTab" role="tablist">
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link active" id="csv-results-tab" data-bs-toggle="tab" 
-                                                    data-bs-target="#csv-results" type="button" role="tab">
-                                                📊 CSV Results
-                                            </button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link" id="image-results-tab" data-bs-toggle="tab" 
-                                                    data-bs-target="#image-results" type="button" role="tab">
-                                                🖼️ Image Results
-                                            </button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link" id="comparison-tab" data-bs-toggle="tab" 
-                                                    data-bs-target="#comparison" type="button" role="tab">
-                                                🔄 Comparison
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="card-body">
-                                    <div class="tab-content" id="resultsTabContent">
-                                        
-                                        <!-- CSV Results Tab -->
-                                        <div class="tab-pane fade show active" id="csv-results" role="tabpanel">
-                                            <div class="row">
-                                                <div class="col-lg-8">
-                                                    <div class="card bg-light">
-                                                        <div class="card-header">
-                                                            <h6 class="mb-0">📈 Temporal Anomaly Heatmap</h6>
-                                                        </div>
-                                                        <div class="card-body" style="min-height: 300px;">
-                                                            <div id="csvHeatmap" style="height: 280px; width: 100%;"></div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <!-- Performance Metrics Chart -->
-                                                    <div class="card mt-3">
-                                                        <div class="card-header">
-                                                            <h6 class="mb-0">📊 Performance Comparison Chart</h6>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <canvas id="metricsChart" width="400" height="200"></canvas>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-lg-4">
-                                                    <div class="card">
-                                                        <div class="card-header">
-                                                            <h6 class="mb-0">📊 Metrics Summary</h6>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <table class="table table-sm">
-                                                                <tbody>
-                                                                    <tr>
-                                                                        <td><strong>F1 Score (NIKA)</strong></td>
-                                                                        <td><span class="badge bg-success">0.780</span></td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td><strong>F1 Score (Baseline)</strong></td>
-                                                                        <td><span class="badge bg-secondary">0.600</span></td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td><strong>Improvement</strong></td>
-                                                                        <td><span class="badge bg-info">+30.0%</span></td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td><strong>Precision</strong></td>
-                                                                        <td><span class="badge bg-primary">0.785</span></td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td><strong>Recall</strong></td>
-                                                                        <td><span class="badge bg-primary">0.775</span></td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td><strong>Anomalies Found</strong></td>
-                                                                        <td><span class="badge bg-warning">12</span></td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </table>
-                                                            <div class="text-center mt-3">
-                                                                <small class="text-muted">Upload CSV data to see detailed metrics</small>
-                                                            </div>
-                                                            <div class="text-center mt-2">
-                                                                <a href="{% url 'download_report' %}?type=csv" class="btn btn-sm btn-outline-success">
-                                                                    <i class="fas fa-download"></i> Download Sample Report
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <!-- Anomaly Distribution Pie Chart -->
-                                                    <div class="card mt-3">
-                                                        <div class="card-header">
-                                                            <h6 class="mb-0">🎯 Anomaly Types Distribution</h6>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <canvas id="anomalyDistributionChart" width="300" height="300"></canvas>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Image Results Tab -->
-                                        <div class="tab-pane fade" id="image-results" role="tabpanel">
-                                            <div class="row">
-                                                <div class="col-lg-8">
-                                                    <div class="card bg-light">
-                                                        <div class="card-header d-flex justify-content-between align-items-center">
-                                                            <h6 class="mb-0">🖼️ Image Analysis</h6>
-                                                            <div class="btn-group btn-group-sm" role="group">
-                                                                <button type="button" class="btn btn-outline-primary active" id="showOriginal">Original</button>
-                                                                <button type="button" class="btn btn-outline-primary" id="showOverlay">With Overlay</button>
-                                                            </div>
-                                                        </div>
-                                                        <div class="card-body text-center" style="min-height: 400px;">
-                                                            <div class="position-relative">
-                                                                <!-- Original Image Placeholder -->
-                                                                <div id="originalImage" class="image-display">
-                                                                    <div class="placeholder-glow">
-                                                                        <div class="placeholder mx-auto" style="width: 400px; height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                                                                    </div>
-                                                                    <p class="text-muted mt-3">Original image will appear here after upload</p>
-                                                                </div>
-                                                                
-                                                                <!-- Overlay Image Placeholder -->
-                                                                <div id="overlayImage" class="image-display d-none">
-                                                                    <div class="position-relative">
-                                                                        <div class="placeholder-glow">
-                                                                            <div class="placeholder mx-auto" style="width: 400px; height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                                                                        </div>
-                                                                        <!-- Mock Anomaly Overlays -->
-                                                                        <div class="anomaly-overlay" style="position: absolute; top: 20%; left: 30%; width: 60px; height: 40px; border: 3px solid #ff4757; background: rgba(255, 71, 87, 0.2);" data-bs-toggle="tooltip" title="Surface Crack - 94% confidence"></div>
-                                                                        <div class="anomaly-overlay" style="position: absolute; top: 60%; left: 70%; width: 40px; height: 50px; border: 3px solid #ffa726; background: rgba(255, 167, 38, 0.2);" data-bs-toggle="tooltip" title="Corrosion - 87% confidence"></div>
-                                                                        <div class="anomaly-overlay" style="position: absolute; top: 40%; left: 15%; width: 30px; height: 30px; border: 3px solid #ff6b6b; background: rgba(255, 107, 107, 0.2);" data-bs-toggle="tooltip" title="Discoloration - 73% confidence"></div>
-                                                                    </div>
-                                                                    <p class="text-muted mt-3">Image with anomaly overlays (hover for details)</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <!-- Detection Performance Chart -->
-                                                    <div class="card mt-3">
-                                                        <div class="card-header">
-                                                            <h6 class="mb-0">📈 Detection Performance Over Time</h6>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <canvas id="detectionPerformanceChart" width="400" height="200"></canvas>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-lg-4">
-                                                    <div class="card">
-                                                        <div class="card-header">
-                                                            <h6 class="mb-0">🎯 Confidence Scores</h6>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <div class="mb-3">
-                                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                    <small class="text-muted">Patch #1 - Surface Crack</small>
-                                                                    <small class="fw-bold">0.94</small>
-                                                                </div>
-                                                                <div class="progress">
-                                                                    <div class="progress-bar bg-danger" style="width: 94%"></div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div class="mb-3">
-                                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                    <small class="text-muted">Patch #2 - Corrosion</small>
-                                                                    <small class="fw-bold">0.87</small>
-                                                                </div>
-                                                                <div class="progress">
-                                                                    <div class="progress-bar bg-warning" style="width: 87%"></div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div class="mb-3">
-                                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                    <small class="text-muted">Patch #3 - Discoloration</small>
-                                                                    <small class="fw-bold">0.73</small>
-                                                                </div>
-                                                                <div class="progress">
-                                                                    <div class="progress-bar bg-info" style="width: 73%"></div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <hr>
-                                                            
-                                                            <div class="text-center">
-                                                                <h6 class="text-success">Overall Detection Score</h6>
-                                                                <div class="display-6 text-success">0.851</div>
-                                                                <small class="text-muted">Average confidence across all patches</small>
-                                                            </div>
-                                                            
-                                                            <div class="text-center mt-3">
-                                                                <small class="text-muted">Upload image to see actual results</small>
-                                                            </div>
-                                                            <div class="text-center mt-2">
-                                                                <a href="{% url 'download_report' %}?type=image" class="btn btn-sm btn-outline-success">
-                                                                    <i class="fas fa-download"></i> Download Sample Report
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Comparison Tab -->
-                                        <div class="tab-pane fade" id="comparison" role="tabpanel">
-                                            <div class="row">
-                                                <div class="col-12">
-                                                    <div class="card bg-light">
-                                                        <div class="card-header">
-                                                            <h6 class="mb-0">🔄 Combined Analysis View</h6>
-                                                        </div>
-                                                        <div class="card-body" style="min-height: 400px;">
-                                                            <div class="row">
-                                                                <div class="col-md-8">
-                                                                    <div class="position-relative bg-white rounded p-4" style="min-height: 350px;">
-                                                                        <!-- Mock Combined Visualization -->
-                                                                        <div class="text-center mb-3">
-                                                                            <h6 class="text-muted">Multi-Modal Anomaly Map</h6>
-                                                                        </div>
-                                                                        
-                                                                        <!-- Mock Data Points with Colored Pins -->
-                                                                        <div class="position-relative">
-                                                                            <div class="placeholder-glow">
-                                                                                <div class="placeholder mx-auto" style="width: 100%; height: 250px; background: linear-gradient(45deg, #e3f2fd 25%, transparent 25%, transparent 50%, #e3f2fd 50%, #e3f2fd 75%, transparent 75%, transparent); background-size: 20px 20px;"></div>
-                                                                            </div>
-                                                                            
-                                                                            <!-- Colored Pins -->
-                                                                            <div class="anomaly-pin critical" style="position: absolute; top: 15%; left: 25%;" title="Critical CSV Anomaly">
-                                                                                <i class="fas fa-map-pin text-danger fa-2x"></i>
-                                                                            </div>
-                                                                            <div class="anomaly-pin high" style="position: absolute; top: 35%; left: 60%;" title="High Image Anomaly">
-                                                                                <i class="fas fa-map-pin text-warning fa-2x"></i>
-                                                                            </div>
-                                                                            <div class="anomaly-pin medium" style="position: absolute; top: 65%; left: 40%;" title="Medium CSV Anomaly">
-                                                                                <i class="fas fa-map-pin text-info fa-2x"></i>
-                                                                            </div>
-                                                                            <div class="anomaly-pin low" style="position: absolute; top: 80%; left: 75%;" title="Low Image Anomaly">
-                                                                                <i class="fas fa-map-pin text-success fa-2x"></i>
-                                                                            </div>
-                                                                            <div class="anomaly-pin critical" style="position: absolute; top: 45%; left: 20%;" title="Critical Image Anomaly">
-                                                                                <i class="fas fa-map-pin text-danger fa-2x"></i>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <div class="card">
-                                                                        <div class="card-header">
-                                                                            <h6 class="mb-0">🏷️ Legend</h6>
-                                                                        </div>
-                                                                        <div class="card-body">
-                                                                            <div class="d-flex align-items-center mb-2">
-                                                                                <i class="fas fa-map-pin text-danger me-2"></i>
-                                                                                <span class="small">Critical Anomalies</span>
-                                                                            </div>
-                                                                            <div class="d-flex align-items-center mb-2">
-                                                                                <i class="fas fa-map-pin text-warning me-2"></i>
-                                                                                <span class="small">High Priority</span>
-                                                                            </div>
-                                                                            <div class="d-flex align-items-center mb-2">
-                                                                                <i class="fas fa-map-pin text-info me-2"></i>
-                                                                                <span class="small">Medium Priority</span>
-                                                                            </div>
-                                                                            <div class="d-flex align-items-center mb-3">
-                                                                                <i class="fas fa-map-pin text-success me-2"></i>
-                                                                                <span class="small">Low Priority</span>
-                                                                            </div>
-                                                                            
-                                                                            <hr>
-                                                                            
-                                                                            <div class="mb-2">
-                                                                                <small class="text-muted">Data Sources:</small>
-                                                                            </div>
-                                                                            <div class="mb-1">
-                                                                                <span class="badge bg-info me-2">CSV</span>
-                                                                                <span class="small">Time-series data</span>
-                                                                            </div>
-                                                                            <div class="mb-3">
-                                                                                <span class="badge bg-success me-2">IMG</span>
-                                                                                <span class="small">Visual inspection</span>
-                                                                            </div>
-                                                                            
-                                                                            <div class="text-center">
-                                                                                <small class="text-muted">Combined view shows correlation between different anomaly types</small>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                    </div>
-                                </div>
-                            </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map -->
+        <div class="card">
+            <div class="card-header">
+                <div class="flex justify-between items-center">
+                    <h4 class="card-title">Geographic Distribution</h4>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-secondary">
+                            <i data-lucide="layers" class="w-4 h-4"></i>
+                            Layers
+                        </button>
+                        <button class="btn btn-sm btn-secondary">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content p-0">
+                <div class="map-container" id="csv-map"></div>
+            </div>
+        </div>
+        
+        <!-- Anomalies List -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Detected Anomalies</h4>
+            </div>
+            <div class="card-content">
+                <div id="anomalies-list">
+                    <div class="flex items-center justify-center py-8 text-muted">
+                        <div class="text-center">
+                            <i data-lucide="file-search" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                            <p>No anomalies detected yet</p>
+                            <p class="text-sm">Upload a CSV file to begin analysis</p>
                         </div>
                     </div>
                 </div>
@@ -419,381 +258,245 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_css %}
-.bg-gradient-to-r {
-    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
-}
+<!-- Image Results Tab -->
+<div id="image-results" class="tab-content">
+    <div class="space-y-6">
+        <!-- Image Analysis Container -->
+        <div id="image-analysis">
+            <div class="flex items-center justify-center py-12 text-muted">
+                <div class="text-center">
+                    <i data-lucide="image" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                    <h3 class="text-xl font-medium mb-2">No Images Analyzed</h3>
+                    <p class="text-muted">Upload an image to see anomaly detection results</p>
+                    <button onclick="showTab('upload')" class="btn btn-primary mt-4">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        Upload Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-/* FilePond custom styling */
-.filepond--root {
-    margin-bottom: 1rem;
-}
+<!-- Comparison Tab -->
+<div id="comparison" class="tab-content">
+    <div class="space-y-6">
+        <!-- Comparison Tools -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">CSV vs Image Analysis</h4>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="comparison-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Confidence Comparison</h4>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">CSV Analysis</span>
+                            <span class="font-medium">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Image Analysis</span>
+                            <span class="font-medium">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Quick Actions</h4>
+                </div>
+                <div class="card-content space-y-3">
+                    <button class="btn btn-primary w-full">
+                        <i data-lucide="git-merge" class="w-4 h-4"></i>
+                        Merge Results
+                    </button>
+                    <button class="btn btn-secondary w-full">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Export Comparison
+                    </button>
+                    <button class="btn btn-accent w-full">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Combined Map View -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Combined Analysis Map</h4>
+            </div>
+            <div class="card-content p-0">
+                <div class="map-container" id="comparison-map"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-.filepond--drop-label {
-    color: #4b5563;
-    font-size: 0.875rem;
-}
-
-.filepond--panel-root {
-    border-radius: 0.5rem;
-    background-color: #f9fafb;
-    border: 2px dashed #d1d5db;
-}
-
-.filepond--panel-root:hover {
-    border-color: #9ca3af;
-}
-
-/* Results tabs styling */
-.card-header-tabs {
-    border-bottom: 0;
-    margin-bottom: -1px;
-}
-
-.card-header-tabs .nav-link {
-    border: 1px solid transparent;
-    border-top-left-radius: 0.375rem;
-    border-top-right-radius: 0.375rem;
-    margin-right: 0.25rem;
-}
-
-.card-header-tabs .nav-link.active {
-    background-color: #fff;
-    border-color: #dee2e6 #dee2e6 #fff;
-}
-
-/* Placeholder styling */
-.placeholder {
-    border-radius: 0.5rem;
-}
-
-/* Anomaly overlay styling */
-.anomaly-overlay {
-    border-radius: 0.25rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.anomaly-overlay:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-/* Anomaly pins styling */
-.anomaly-pin {
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    z-index: 10;
-}
-
-.anomaly-pin:hover {
-    transform: scale(1.2);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-/* Progress bars */
-.progress {
-    height: 8px;
-}
-
-/* Table improvements */
-.table th {
-    border-top: none;
-    font-weight: 600;
-    font-size: 0.875rem;
-    background-color: #f8f9fa;
-}
-
-.table td {
-    vertical-align: middle;
-}
-
-/* Badge improvements */
-.badge {
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-/* Image display container */
-.image-display {
-    transition: opacity 0.3s ease;
-}
+<!-- Quick Stats Sidebar -->
+<div class="fixed right-4 top-1/2 transform -translate-y-1/2 z-30 hidden xl:block">
+    <div class="card w-64">
+        <div class="card-header">
+            <h5 class="card-title text-sm">Quick Stats</h5>
+        </div>
+        <div class="card-content space-y-3">
+            <div class="flex justify-between text-sm">
+                <span class="text-muted">Total Uploads:</span>
+                <span class="font-medium">0</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-muted">Anomalies Found:</span>
+                <span class="font-medium text-warning">0</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-muted">Average Confidence:</span>
+                <span class="font-medium text-success">0%</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-muted">Processing Time:</span>
+                <span class="font-medium">-</span>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-// Register FilePond plugins
-FilePond.registerPlugin(FilePondPluginImagePreview);
-FilePond.registerPlugin(FilePondPluginFileValidateType);
-
-// Initialize CSV FilePond
-const csvInput = document.querySelector('.filepond-csv');
-if (csvInput) {
-    const csvPond = FilePond.create(csvInput, {
-        labelIdle: 'Drag & Drop your CSV file or <span class="filepond--label-action">Browse</span>',
-        acceptedFileTypes: ['text/csv'],
-        allowMultiple: false,
-        maxFiles: 1,
-        dropOnPage: true,
-        dropValidation: true,
-        labelFileTypeNotAllowed: 'File of invalid type',
-        fileValidateTypeLabelExpectedTypes: 'Expects CSV files',
-        stylePanelLayout: 'compact',
-        styleLoadIndicatorPosition: 'center bottom',
-        styleProgressIndicatorPosition: 'right bottom',
-        styleButtonRemoveItemPosition: 'left bottom',
-        styleButtonProcessItemPosition: 'right bottom'
-    });
-}
-
-// Initialize Image FilePond
-const imageInput = document.querySelector('.filepond-image');
-if (imageInput) {
-    const imagePond = FilePond.create(imageInput, {
-        labelIdle: 'Drag & Drop your image or <span class="filepond--label-action">Browse</span>',
-        acceptedFileTypes: ['image/*'],
-        allowMultiple: false,
-        maxFiles: 1,
-        dropOnPage: true,
-        dropValidation: true,
-        allowImagePreview: true,
-        imagePreviewHeight: 170,
-        imageCropAspectRatio: '1:1',
-        imageResizeTargetWidth: 200,
-        imageResizeTargetHeight: 200,
-        stylePanelLayout: 'compact',
-        styleLoadIndicatorPosition: 'center bottom',
-        styleProgressIndicatorPosition: 'right bottom',
-        styleButtonRemoveItemPosition: 'left bottom',
-        styleButtonProcessItemPosition: 'right bottom'
-    });
-}
-
-// Handle form submissions
-document.getElementById('csvUploadForm').addEventListener('submit', function(e) {
-    const fileInput = this.querySelector('input[type="file"]');
-    if (!fileInput.files.length) {
-        e.preventDefault();
-        alert('Please select a CSV file to upload.');
-        return false;
-    }
-});
-
-document.getElementById('imageUploadForm').addEventListener('submit', function(e) {
-    const fileInput = this.querySelector('input[type="file"]');
-    if (!fileInput.files.length) {
-        e.preventDefault();
-        alert('Please select an image file to upload.');
-        return false;
-    }
-});
-
-// Handle image overlay toggle
+<script>
 document.addEventListener('DOMContentLoaded', function() {
-    const showOriginalBtn = document.getElementById('showOriginal');
-    const showOverlayBtn = document.getElementById('showOverlay');
-    const originalImage = document.getElementById('originalImage');
-    const overlayImage = document.getElementById('overlayImage');
-    
-    if (showOriginalBtn && showOverlayBtn) {
-        showOriginalBtn.addEventListener('click', function() {
-            showOriginalBtn.classList.add('active');
-            showOverlayBtn.classList.remove('active');
-            originalImage.classList.remove('d-none');
-            overlayImage.classList.add('d-none');
+    // Enhanced file upload handling
+    function setupFileUpload(inputId, uploadArea, fileType) {
+        const input = document.getElementById(inputId);
+        const area = document.querySelector(`[data-file-type="${fileType}"]`);
+        const submitBtn = document.getElementById(`${fileType}-submit-btn`);
+        const fileInfo = document.getElementById(`${fileType}-file-info`);
+        const fileName = document.getElementById(`${fileType}-file-name`);
+        const fileSize = document.getElementById(`${fileType}-file-size`);
+        
+        if (!input || !area) return;
+        
+        // Click to browse
+        area.addEventListener('click', () => input.click());
+        
+        // File selection
+        input.addEventListener('change', function() {
+            handleFile(this.files[0]);
         });
         
-        showOverlayBtn.addEventListener('click', function() {
-            showOverlayBtn.classList.add('active');
-            showOriginalBtn.classList.remove('active');
-            overlayImage.classList.remove('d-none');
-            originalImage.classList.add('d-none');
-        });
-    }
-    
-    // Add hover effects for anomaly pins
-    const anomalyPins = document.querySelectorAll('.anomaly-pin');
-    anomalyPins.forEach(pin => {
-        pin.style.cursor = 'pointer';
-    });
-    
-    // Initialize Bootstrap tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Initialize Leaflet Heatmap
-    if (document.getElementById('csvHeatmap')) {
-        var heatmapData = [
-            [40.7488, -73.9857, 0.8], // High anomaly
-            [40.7614, -73.9776, 0.6], // Medium anomaly  
-            [40.7505, -73.9934, 0.9], // Very high anomaly
-            [40.7589, -73.9851, 0.4], // Low anomaly
-            [40.7549, -73.9840, 0.7], // High anomaly
-            [40.7516, -73.9876, 0.5], // Medium anomaly
-            [40.7580, -73.9855, 0.3], // Low anomaly
-        ];
-        
-        var csvMap = L.map('csvHeatmap', {
-            scrollWheelZoom: false,
-            dragging: true,
-            zoomControl: true
-        }).setView([40.7549, -73.9840], 13);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(csvMap);
-        
-        // Add sample markers for anomalies
-        heatmapData.forEach(function(point) {
-            var color = point[2] > 0.7 ? '#ff4757' : point[2] > 0.5 ? '#ffa726' : '#26a69a';
-            var circle = L.circleMarker([point[0], point[1]], {
-                radius: 8 + (point[2] * 10),
-                fillColor: color,
-                color: color,
-                weight: 2,
-                opacity: 0.8,
-                fillOpacity: 0.6
-            }).addTo(csvMap);
+        function handleFile(file) {
+            if (!file) return;
             
-            circle.bindPopup(`Anomaly Intensity: ${(point[2] * 100).toFixed(0)}%`);
-        });
+            // Show file info
+            if (fileName) fileName.textContent = file.name;
+            if (fileSize) fileSize.textContent = formatFileSize(file.size);
+            if (fileInfo) fileInfo.classList.remove('hidden');
+            if (submitBtn) submitBtn.disabled = false;
+            
+            // Validate file
+            if (fileType === 'csv' && !file.name.endsWith('.csv')) {
+                alert('Please select a CSV file');
+                return;
+            }
+            
+            if (fileType === 'image' && !file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            if (file.size > 50 * 1024 * 1024) {
+                alert('File size must be less than 50MB');
+                return;
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
     }
     
-    // Initialize CSV Results Charts
-    if (document.getElementById('metricsChart')) {
-        var ctx1 = document.getElementById('metricsChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score'],
-                datasets: [{
-                    label: 'NIKA Performance',
-                    data: [0.94, 0.91, 0.87, 0.89],
-                    backgroundColor: [
-                        'rgba(75, 192, 192, 0.8)',
-                        'rgba(54, 162, 235, 0.8)', 
-                        'rgba(255, 206, 86, 0.8)',
-                        'rgba(153, 102, 255, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)', 
-                        'rgba(153, 102, 255, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 1.0,
-                        ticks: {
-                            callback: function(value) {
-                                return (value * 100) + '%';
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    }
+    // Initialize file uploads
+    setupFileUpload('csv-file-input', null, 'csv');
+    setupFileUpload('image-file-input', null, 'image');
     
-    if (document.getElementById('anomalyDistributionChart')) {
-        var ctx2 = document.getElementById('anomalyDistributionChart').getContext('2d');
-        new Chart(ctx2, {
-            type: 'doughnut',
-            data: {
-                labels: ['Critical', 'High', 'Medium', 'Low'],
-                datasets: [{
-                    data: [12, 19, 25, 44],
-                    backgroundColor: [
-                        '#ff4757',
-                        '#ffa726', 
-                        '#26a69a',
-                        '#78909c'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 15,
-                            usePointStyle: true
-                        }
-                    }
-                }
-            }
-        });
-    }
-    
-    // Initialize Image Results Chart
-    if (document.getElementById('detectionPerformanceChart')) {
-        var ctx3 = document.getElementById('detectionPerformanceChart').getContext('2d');
-        new Chart(ctx3, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Detection Accuracy (%)',
-                    data: [85, 89, 92, 87, 94, 91],
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: 'rgba(75, 192, 192, 1)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    }
-        pin.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.2)';
-            this.style.transition = 'transform 0.2s ease';
-        });
-        pin.addEventListener('mouseleave', function() {
-            this.style.transform = 'scale(1)';
-        });
+    // Form submission with progress
+    document.getElementById('csv-upload-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm(this, 'csv');
     });
+    
+    document.getElementById('image-upload-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm(this, 'image');
+    });
+    
+    function submitForm(form, type) {
+        const formData = new FormData(form);
+        const progressBar = form.querySelector('.progress-bar');
+        const progress = form.querySelector('.progress');
+        
+        if (progress) progress.style.display = 'block';
+        
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable && progressBar) {
+                const percent = (e.loaded / e.total) * 100;
+                progressBar.style.width = percent + '%';
+            }
+        });
+        
+        xhr.addEventListener('load', function() {
+            if (xhr.status === 200) {
+                // Success - reload or show results
+                window.location.reload();
+            } else {
+                alert('Upload failed. Please try again.');
+            }
+            if (progress) progress.style.display = 'none';
+        });
+        
+        xhr.addEventListener('error', function() {
+            alert('Network error. Please check your connection.');
+            if (progress) progress.style.display = 'none';
+        });
+        
+        xhr.open('POST', form.action);
+        xhr.send(formData);
+    }
+    
+    // Initialize charts and maps
+    setTimeout(() => {
+        if (window.NIKA) {
+            window.NIKA.charts.createAnomalyChart();
+            window.NIKA.charts.createTrendChart();
+            window.NIKA.maps.createMap('csv-map');
+            window.NIKA.maps.createMap('comparison-map');
+        }
+    }, 1000);
 });
+</script>
 {% endblock %}

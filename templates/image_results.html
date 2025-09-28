@@ -1,275 +1,415 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Image Analysis Results - NIKA{% endblock %}
+{% block title %}Image Results - NIKA{% endblock %}
+
+{% block page_title %}Image Analysis Results{% endblock %}
+
+{% block page_description %}Cave/mine image anomaly detection results{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center py-3">
-                <div>
-                    <h1 class="h3 mb-1">Image Analysis Results</h1>
-                    <p class="text-muted">File: {{ results.file_info.filename }} ({{ results.file_info.format }})</p>
-                </div>
-                <div>
-                    <a href="{% url 'download_report' %}?type=image" class="btn btn-success me-2">
-                        <i class="fas fa-download"></i> Download PDF Report
-                    </a>
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
-                    </a>
-                </div>
-            </div>
-        </div>
+<!-- Results Header -->
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h3 class="text-xl font-semibold mb-1">Image Analysis Complete</h3>
+        <p class="text-muted">File: {{ results.file_info.filename|default:"uploaded_image.jpg" }}</p>
     </div>
-
-    <!-- Messages -->
-    {% if messages %}
-        <div class="row">
-            <div class="col-12">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
-
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Total Patches</h5>
-                    <h2 class="display-6">{{ results.analysis_results.total_patches }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">High Confidence</h5>
-                    <h2 class="display-6">{{ results.analysis_results.high_confidence_patches }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Critical Issues</h5>
-                    <h2 class="display-6">{{ results.analysis_results.critical_anomalies }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Processing Time</h5>
-                    <h2 class="display-6">{{ results.analysis_results.processing_time }}s</h2>
-                </div>
-            </div>
-        </div>
+    <div class="flex gap-3">
+        <a href="{% url 'download_report' %}?type=image" class="btn btn-success">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Download Report
+        </a>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Back to Dashboard
+        </a>
     </div>
+</div>
 
-    <!-- Image Quality & Detection Metrics -->
-    <div class="row mb-4">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">🖼️ Image Quality Analysis</h5>
+<!-- Metrics Overview -->
+<div class="metrics-grid mb-8">
+    <div class="metric-card">
+        <div class="metric-value">{{ results.metrics.anomalies_detected|default:0 }}</div>
+        <div class="metric-label">Anomalies Detected</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ results.metrics.confidence_score|default:0 }}%</div>
+        <div class="metric-label">Average Confidence</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ results.metrics.coverage_area|default:0 }}%</div>
+        <div class="metric-label">Coverage Area</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ results.processing_time|default:"< 1s" }}</div>
+        <div class="metric-label">Processing Time</div>
+    </div>
+</div>
+
+<!-- Image Comparison -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Original Image -->
+    <div class="card">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <h4 class="card-title">Original Image</h4>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-secondary" onclick="toggleImageView('original')">
+                        <i data-lucide="maximize" class="w-3 h-3"></i>
+                        Fullscreen
+                    </button>
+                    <button class="btn btn-sm btn-secondary">
+                        <i data-lucide="download" class="w-3 h-3"></i>
+                        Download
+                    </button>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6">
-                            <p><strong>Resolution:</strong> {{ results.analysis_results.image_quality.resolution }}</p>
-                            <p><strong>File Size:</strong> {{ results.file_info.size_bytes|filesizeformat }}</p>
+            </div>
+        </div>
+        <div class="card-content p-0">
+            <div class="relative">
+                {% if results.original_image %}
+                    <img id="original-image" src="{{ results.original_image }}" alt="Original Image" class="w-full h-auto rounded-lg">
+                {% else %}
+                    <div class="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                        <div class="text-center text-muted">
+                            <i data-lucide="image" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                            <p>Original image not available</p>
                         </div>
-                        <div class="col-6">
-                            <div class="mb-2">
-                                <small class="text-muted">Clarity Score</small>
-                                <div class="progress">
-                                    <div class="progress-bar bg-success" 
-                                         style="width: {{ results.analysis_results.image_quality.clarity_score|floatformat:0 }}%"></div>
-                                </div>
-                                <small>{{ results.analysis_results.image_quality.clarity_score|floatformat:3 }}</small>
+                    </div>
+                {% endif %}
+                
+                <!-- Image Info Overlay -->
+                <div class="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                    {{ results.image_info.width|default:"Unknown" }} × {{ results.image_info.height|default:"Unknown" }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Processed Image with Overlays -->
+    <div class="card">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <h4 class="card-title">Anomaly Detection Overlay</h4>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-secondary" onclick="toggleImageView('overlay')">
+                        <i data-lucide="maximize" class="w-3 h-3"></i>
+                        Fullscreen
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="toggleOverlay()">
+                        <i data-lucide="layers" class="w-3 h-3"></i>
+                        Toggle Overlay
+                    </button>
+                    <button class="btn btn-sm btn-secondary">
+                        <i data-lucide="download" class="w-3 h-3"></i>
+                        Download
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-content p-0">
+            <div class="relative">
+                {% if results.overlay_image %}
+                    <img id="overlay-image" src="{{ results.overlay_image }}" alt="Anomaly Detection Overlay" class="w-full h-auto rounded-lg">
+                {% else %}
+                    <div class="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                        <div class="text-center text-muted">
+                            <div class="loading mb-4">
+                                <div class="spinner"></div>
                             </div>
-                            <div class="mb-2">
-                                <small class="text-muted">Contrast Score</small>
-                                <div class="progress">
-                                    <div class="progress-bar bg-info" 
-                                         style="width: {{ results.analysis_results.image_quality.contrast_score|floatformat:0 }}%"></div>
-                                </div>
-                                <small>{{ results.analysis_results.image_quality.contrast_score|floatformat:3 }}</small>
-                            </div>
+                            <p>Processing image...</p>
+                            <p class="text-xs">This may take a few moments</p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">🎯 Detection Performance</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6">
-                            <p><strong>Sensitivity:</strong> {{ results.analysis_results.detection_metrics.sensitivity|floatformat:3 }}</p>
-                            <p><strong>Specificity:</strong> {{ results.analysis_results.detection_metrics.specificity|floatformat:3 }}</p>
-                        </div>
-                        <div class="col-6">
-                            <p><strong>Precision:</strong> {{ results.analysis_results.detection_metrics.precision|floatformat:3 }}</p>
-                            <p><strong>Coverage:</strong> {{ results.analysis_results.coverage_analysis.scanned_area_percentage }}%</p>
-                        </div>
-                    </div>
-                    <div class="mt-2">
-                        <small class="text-muted">NIKA Improvement: </small>
-                        <span class="badge bg-success">+{{ results.analysis_results.baseline_comparison.improvement_rate }}%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recommendations -->
-    {% if results.recommendations %}
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">💡 Recommendations</h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-0">
-                            {% for recommendation in results.recommendations %}
-                                <li class="mb-2">{{ recommendation }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% endif %}
-
-    <!-- Anomaly Patches -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">🔍 Detected Anomaly Patches</h5>
-                </div>
-                <div class="card-body">
-                    {% if results.patches %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Type</th>
-                                        <th>Severity</th>
-                                        <th>Confidence</th>
-                                        <th>Location</th>
-                                        <th>Area</th>
-                                        <th>Dominant Color</th>
-                                        <th>Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for patch in results.patches %}
-                                        <tr>
-                                            <td><code>{{ patch.id }}</code></td>
-                                            <td>{{ patch.type }}</td>
-                                            <td>
-                                                <span class="badge 
-                                                    {% if patch.severity == 'Critical' %}bg-danger
-                                                    {% elif patch.severity == 'High' %}bg-warning
-                                                    {% elif patch.severity == 'Medium' %}bg-info
-                                                    {% else %}bg-secondary{% endif %}">
-                                                    {{ patch.severity }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="progress me-2" style="width: 60px; height: 8px;">
-                                                        <div class="progress-bar bg-success" 
-                                                             style="width: {{ patch.confidence|floatformat:0 }}%"></div>
-                                                    </div>
-                                                    <small>{{ patch.confidence|floatformat:3 }}</small>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <small>
-                                                    ({{ patch.center_coordinates.x }}, {{ patch.center_coordinates.y }})<br>
-                                                    {{ patch.bounding_box.width }}×{{ patch.bounding_box.height }}px
-                                                </small>
-                                            </td>
-                                            <td><small>{{ patch.area_percentage }}%</small></td>
-                                            <td>
-                                                <span class="badge" 
-                                                      style="background-color: {{ patch.color_analysis.dominant_color }}; 
-                                                             color: {% if patch.color_analysis.dominant_color in 'yellow,white' %}black{% else %}white{% endif %};">
-                                                    {{ patch.color_analysis.dominant_color|capfirst }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary" type="button" 
-                                                        data-bs-toggle="collapse" 
-                                                        data-bs-target="#details{{ forloop.counter }}">
-                                                    Details
-                                                </button>
-                                                <div class="collapse mt-2" id="details{{ forloop.counter }}">
-                                                    <div class="card card-body">
-                                                        <small>
-                                                            <strong>Texture:</strong><br>
-                                                            Roughness: {{ patch.texture_features.roughness|floatformat:3 }}<br>
-                                                            Uniformity: {{ patch.texture_features.uniformity|floatformat:3 }}<br>
-                                                            Edge Density: {{ patch.texture_features.edge_density|floatformat:3 }}<br>
-                                                            <strong>Color:</strong><br>
-                                                            Contrast: {{ patch.color_analysis.contrast_level|floatformat:3 }}<br>
-                                                            Brightness: {{ patch.color_analysis.brightness|floatformat:3 }}
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
-                            <h5>No Anomalies Detected</h5>
-                            <p class="text-muted">Your image appears to be clean with no anomalies found.</p>
-                        </div>
-                    {% endif %}
+                {% endif %}
+                
+                <!-- Confidence Overlay -->
+                <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                    Confidence: {{ results.metrics.confidence_score|default:"0" }}%
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Analysis Details -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+    <!-- Anomaly Statistics -->
+    <div class="xl:col-span-2">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Detection Statistics</h4>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-destructive rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i data-lucide="alert-triangle" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-destructive">{{ results.stats.high_severity|default:0 }}</div>
+                        <div class="text-sm text-muted">High Risk</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-warning rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i data-lucide="alert-circle" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-warning">{{ results.stats.medium_severity|default:0 }}</div>
+                        <div class="text-sm text-muted">Medium Risk</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-info rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i data-lucide="info" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-info">{{ results.stats.low_severity|default:0 }}</div>
+                        <div class="text-sm text-muted">Low Risk</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-success rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-success">{{ results.stats.normal_areas|default:0 }}%</div>
+                        <div class="text-sm text-muted">Normal Areas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Information -->
+    <div class="space-y-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Image Information</h4>
+            </div>
+            <div class="card-content space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Filename:</span>
+                    <span class="font-medium truncate ml-2">{{ results.file_info.filename|default:"uploaded_image.jpg" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">File Size:</span>
+                    <span class="font-medium">{{ results.file_info.size|filesizeformat|default:"Unknown" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Dimensions:</span>
+                    <span class="font-medium">{{ results.image_info.width|default:"Unknown" }} × {{ results.image_info.height|default:"Unknown" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Format:</span>
+                    <span class="font-medium">{{ results.image_info.format|default:"Unknown" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Color Mode:</span>
+                    <span class="font-medium">{{ results.image_info.mode|default:"RGB" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analysis Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Analysis Settings</h4>
+            </div>
+            <div class="card-content space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Algorithm:</span>
+                    <span class="font-medium">{{ results.parameters.algorithm|default:"Deep Learning" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Model:</span>
+                    <span class="font-medium">{{ results.parameters.model|default:"YOLOv8" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Sensitivity:</span>
+                    <span class="font-medium">{{ results.parameters.sensitivity|default:"High" }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted">Processing Time:</span>
+                    <span class="font-medium">{{ results.processing_time|default:"< 1s" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detected Anomalies List -->
+{% if results.anomalies %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex justify-between items-center">
+            <h4 class="card-title">Detected Anomalies ({{ results.anomalies|length }})</h4>
+            <div class="flex gap-2">
+                <select class="form-select text-sm">
+                    <option>All Types</option>
+                    <option>Structural</option>
+                    <option>Chemical</option>
+                    <option>Physical</option>
+                </select>
+                <button class="btn btn-sm btn-secondary">
+                    <i data-lucide="filter" class="w-3 h-3"></i>
+                    Filter
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-content">
+        <div class="grid gap-4">
+            {% for anomaly in results.anomalies %}
+            <div class="card border-l-4 {% if anomaly.severity == 'High' %}border-l-destructive{% elif anomaly.severity == 'Medium' %}border-l-warning{% else %}border-l-success{% endif %}">
+                <div class="card-content p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h5 class="font-semibold">{{ anomaly.type|default:"Structural Anomaly" }}</h5>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium {% if anomaly.severity == 'High' %}bg-destructive text-destructive-foreground{% elif anomaly.severity == 'Medium' %}bg-warning text-warning-foreground{% else %}bg-success text-success-foreground{% endif %}">
+                                {{ anomaly.severity }}
+                            </span>
+                            <span class="text-sm font-medium">{{ anomaly.confidence }}%</span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-sm mb-3">{{ anomaly.description }}</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-muted">Location:</span>
+                            <span class="font-medium ml-1">{{ anomaly.x|default:"N/A" }}, {{ anomaly.y|default:"N/A" }}</span>
+                        </div>
+                        <div>
+                            <span class="text-muted">Size:</span>
+                            <span class="font-medium ml-1">{{ anomaly.width|default:"N/A" }} × {{ anomaly.height|default:"N/A" }}px</span>
+                        </div>
+                        <div>
+                            <span class="text-muted">Area:</span>
+                            <span class="font-medium ml-1">{{ anomaly.area|default:"N/A" }} px²</span>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-primary" onclick="highlightAnomaly({{ anomaly.x }}, {{ anomaly.y }}, {{ anomaly.width }}, {{ anomaly.height }})">
+                                <i data-lucide="eye" class="w-3 h-3"></i>
+                                View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-content">
+        <div class="flex items-center justify-center py-8 text-muted">
+            <div class="text-center">
+                <i data-lucide="check-circle" class="w-16 h-16 mx-auto mb-4 text-success opacity-50"></i>
+                <h3 class="text-xl font-medium mb-2 text-success">No Anomalies Detected</h3>
+                <p>The image appears to show normal geological features</p>
+                <button onclick="showTab('upload')" class="btn btn-primary mt-4">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    Upload Another Image
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="mt-8">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Quick Actions</h4>
+        </div>
+        <div class="card-content">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <button class="btn btn-primary">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    Re-analyze
+                </button>
+                <button class="btn btn-secondary">
+                    <i data-lucide="share" class="w-4 h-4"></i>
+                    Share Results
+                </button>
+                <button class="btn btn-accent" onclick="showTab('comparison')">
+                    <i data-lucide="git-compare" class="w-4 h-4"></i>
+                    Compare with CSV
+                </button>
+                <a href="{% url 'download_report' %}?type=image" class="btn btn-success">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    Generate Report
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Image Modal -->
+<div id="image-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex items-center justify-center">
+    <div class="relative max-w-full max-h-full p-4">
+        <img id="modal-image" src="" alt="" class="max-w-full max-h-full object-contain">
+        <button onclick="closeImageModal()" class="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <div class="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded">
+            <span id="modal-image-title">Image View</span>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
-{% block extra_css %}
-.progress {
-    height: 8px;
+{% block extra_js %}
+<script>
+// Image view functions
+function toggleImageView(type) {
+    const modal = document.getElementById('image-modal');
+    const modalImage = document.getElementById('modal-image');
+    const modalTitle = document.getElementById('modal-image-title');
+    
+    if (type === 'original') {
+        const originalImg = document.getElementById('original-image');
+        modalImage.src = originalImg.src;
+        modalTitle.textContent = 'Original Image';
+    } else {
+        const overlayImg = document.getElementById('overlay-image');
+        modalImage.src = overlayImg.src;
+        modalTitle.textContent = 'Anomaly Detection Overlay';
+    }
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
-.table th {
-    border-top: none;
-    font-weight: 600;
-    font-size: 0.875rem;
+function closeImageModal() {
+    const modal = document.getElementById('image-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
 }
 
-.badge {
-    font-size: 0.75rem;
+function toggleOverlay() {
+    // Toggle overlay visibility (placeholder function)
+    alert('Overlay toggle functionality would be implemented here');
 }
 
-.card-body .collapse .card {
-    border: 1px solid #dee2e6;
-    font-size: 0.8rem;
+function highlightAnomaly(x, y, width, height) {
+    // Highlight specific anomaly in the image (placeholder function)
+    alert(`Highlighting anomaly at (${x}, ${y}) with size ${width}×${height}`);
 }
+
+// Global function for comparison navigation
+function showTab(tabId) {
+    window.location.href = '{% url "dashboard" %}#' + tabId;
+}
+
+// Initialize page functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Close modal on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeImageModal();
+        }
+    });
+    
+    // Initialize Lucide icons for dynamically created elements
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+});
+</script>
 {% endblock %}
