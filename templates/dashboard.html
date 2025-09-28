@@ -262,7 +262,148 @@
 <!-- Image Results Tab -->
 <div id="image-results" class="tab-content">
     <div class="space-y-6">
-        <!-- Image Analysis Container -->
+        {% if image_results %}
+        <!-- Image Analysis Results -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Image Display -->
+            <div class="lg:col-span-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="flex justify-between items-center">
+                            <h4 class="card-title">Mineral Anomaly Detection Results</h4>
+                            <div class="flex gap-2">
+                                <button id="toggle-overlay" class="btn btn-sm btn-secondary">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    Toggle Overlay
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="downloadImageReport()">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    Download PDF Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="relative bg-muted rounded-lg overflow-hidden">
+                            <img id="main-image" 
+                                 src="{{ MEDIA_URL }}{{ uploaded_file_path }}" 
+                                 alt="Uploaded mineral image" 
+                                 class="w-full h-auto">
+                            <!-- Overlay canvas for anomaly zones -->
+                            <canvas id="anomaly-overlay" 
+                                    class="absolute top-0 left-0 w-full h-full pointer-events-none"
+                                    style="display: none;"></canvas>
+                        </div>
+                        
+                        <!-- Image Info -->
+                        <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span class="text-muted">Filename:</span>
+                                <p class="font-medium">{{ image_results.file_info.filename }}</p>
+                            </div>
+                            <div>
+                                <span class="text-muted">Resolution:</span>
+                                <p class="font-medium">{{ image_results.analysis_results.image_quality.resolution }}</p>
+                            </div>
+                            <div>
+                                <span class="text-muted">Processing Time:</span>
+                                <p class="font-medium">{{ image_results.analysis_results.processing_time }}s</p>
+                            </div>
+                            <div>
+                                <span class="text-muted">Zones Detected:</span>
+                                <p class="font-medium">{{ image_results.analysis_results.total_zones }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Anomaly Zones Panel -->
+            <div class="space-y-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Detected Anomaly Zones</h4>
+                    </div>
+                    <div class="card-content">
+                        <div class="space-y-4">
+                            {% for zone in image_results.anomaly_zones %}
+                            <div class="p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer zone-item" 
+                                 data-zone-id="{{ zone.id }}"
+                                 data-x="{{ zone.bounding_box.x }}"
+                                 data-y="{{ zone.bounding_box.y }}"
+                                 data-width="{{ zone.bounding_box.width }}"
+                                 data-height="{{ zone.bounding_box.height }}">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h5 class="font-medium">{{ zone.name }}</h5>
+                                    <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                                        {{ zone.confidence|floatformat:0 }}%
+                                    </span>
+                                </div>
+                                <div class="space-y-1 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-muted">Mineral Type:</span>
+                                        <span class="font-medium">{{ zone.mineral_type }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-muted">Confidence:</span>
+                                        <span class="font-medium">{{ zone.confidence|floatformat:1 }}%</span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="text-muted text-xs">Characteristics:</span>
+                                        <ul class="mt-1 text-xs space-y-0.5">
+                                            {% for char in zone.characteristics|slice:":2" %}
+                                            <li class="text-muted">• {{ char }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommendations -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Recommendations</h4>
+                    </div>
+                    <div class="card-content">
+                        <ul class="space-y-2 text-sm">
+                            {% for rec in image_results.recommendations %}
+                            <li class="flex items-start gap-2">
+                                <span class="text-primary mt-0.5">•</span>
+                                <span>{{ rec }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analysis Metrics -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="metric-card">
+                <div class="metric-value">{{ image_results.analysis_results.total_zones }}</div>
+                <div class="metric-label">Zones Detected</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ image_results.analysis_results.high_confidence_zones }}</div>
+                <div class="metric-label">High Confidence</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ image_results.analysis_results.mineral_types_detected }}</div>
+                <div class="metric-label">Mineral Types</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ image_results.analysis_results.detection_metrics.precision|floatformat:1 }}</div>
+                <div class="metric-label">Precision Score</div>
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- Empty State -->
         <div id="image-analysis">
             <div class="flex items-center justify-center py-12 text-muted">
                 <div class="text-center">
@@ -276,13 +417,117 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 
 <!-- Comparison Tab -->
 <div id="comparison" class="tab-content">
     <div class="space-y-6">
-        <!-- Comparison Tools -->
+        {% if image_results %}
+        <!-- Comparison with Mock Data -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Detection Methods</h4>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Traditional Methods</span>
+                            <span class="font-medium">{{ image_results.analysis_results.baseline_comparison.baseline_detections }} zones</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 60%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">NIKA AI Analysis</span>
+                            <span class="font-medium">{{ image_results.analysis_results.total_zones }} zones</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 100%"></div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-success/10 text-success rounded-lg">
+                            <div class="text-sm font-medium">
+                                +{{ image_results.analysis_results.baseline_comparison.improvement_rate }}% improvement
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Confidence Scores</h4>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Average Confidence</span>
+                            <span class="font-medium">{{ image_results.anomaly_zones.0.confidence|floatformat:0 }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ image_results.anomaly_zones.0.confidence|floatformat:0 }}%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Detection Accuracy</span>
+                            <span class="font-medium">{{ image_results.analysis_results.detection_metrics.precision|floatformat:1 }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ image_results.analysis_results.detection_metrics.precision|floatformat:0 }}%"></div>
+                        </div>
+                        
+                        <div class="mt-2 text-xs text-muted">
+                            Processing time: {{ image_results.analysis_results.processing_time }}s
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Quick Actions</h4>
+                </div>
+                <div class="card-content space-y-3">
+                    <button class="btn btn-primary w-full" onclick="showTab('image-results')">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                        View Results
+                    </button>
+                    <button class="btn btn-secondary w-full" onclick="downloadImageReport()">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Export Analysis
+                    </button>
+                    <button class="btn btn-accent w-full" onclick="downloadImageReport()">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mineral Type Distribution -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Mineral Type Distribution</h4>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {% for zone in image_results.anomaly_zones %}
+                    <div class="text-center p-4 bg-muted rounded-lg">
+                        <div class="text-2xl font-bold mb-2">{{ zone.confidence|floatformat:0 }}%</div>
+                        <div class="text-sm font-medium mb-1">{{ zone.mineral_type }}</div>
+                        <div class="text-xs text-muted">{{ zone.name }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- Empty State -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="card">
                 <div class="card-header">
@@ -348,6 +593,7 @@
             </div>
             <div class="card-content p-0">
                 <div class="map-container" id="comparison-map"></div>
+        {% endif %}
             </div>
         </div>
     </div>

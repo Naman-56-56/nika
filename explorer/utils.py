@@ -123,79 +123,158 @@ def process_csv(file):
 
 def process_image(file):
     """
-    Mock function to process image files and return fake anomaly patches with confidence scores.
+    Mock ML function to process image files and return mineral anomaly zones with confidence scores.
     
     Args:
         file: Uploaded image file
         
     Returns:
-        dict: Contains anomaly patches, confidence scores, and analysis results
+        dict: Contains anomaly zones, confidence scores, mineral predictions, and overlay image path
     """
+    import os
+    from django.conf import settings
     
-    # Generate fake anomaly patches
-    patches = []
-    num_patches = random.randint(2, 8)
+    # Check if this is the special mineral_1 demo file
+    is_mineral_demo = 'mineral_1' in file.name.lower()
     
-    patch_types = [
-        'Surface Crack',
-        'Corrosion Spot',
-        'Discoloration',
-        'Texture Anomaly',
-        'Foreign Object',
-        'Wear Pattern',
-        'Deformation',
-        'Missing Component',
-        'Burn Mark',
-        'Contamination'
-    ]
+    # Generate mock anomaly zones (3 zones as requested)
+    anomaly_zones = []
     
-    # Assume image dimensions for coordinate generation
-    img_width = random.randint(800, 2000)
-    img_height = random.randint(600, 1500)
-    
-    for i in range(num_patches):
-        patch_width = random.randint(50, 200)
-        patch_height = random.randint(50, 200)
-        x = random.randint(0, img_width - patch_width)
-        y = random.randint(0, img_height - patch_height)
-        
-        patch = {
-            'id': f'patch_{i+1}',
-            'type': random.choice(patch_types),
-            'confidence': round(random.uniform(0.70, 0.96), 3),
-            'severity': random.choice(['Low', 'Medium', 'High', 'Critical']),
-            'bounding_box': {
-                'x': x,
-                'y': y,
-                'width': patch_width,
-                'height': patch_height
+    if is_mineral_demo:
+        # Hardcoded mock data for mineral_1 demo
+        anomaly_zones = [
+            {
+                'id': 'zone_1',
+                'name': 'Anomaly Zone 1',
+                'confidence': 0.91,
+                'mineral_type': 'Pyrite',
+                'bounding_box': {
+                    'x': 245,
+                    'y': 158,
+                    'width': 185,
+                    'height': 142
+                },
+                'center_coordinates': {
+                    'x': 337,
+                    'y': 229
+                },
+                'characteristics': [
+                    'High metallic luster',
+                    'Cubic crystal structure',
+                    'Brassy yellow color',
+                    'Magnetic susceptibility'
+                ],
+                'composition': {
+                    'iron_sulfide': 0.92,
+                    'trace_elements': 0.08
+                }
             },
-            'center_coordinates': {
-                'x': x + patch_width // 2,
-                'y': y + patch_height // 2
+            {
+                'id': 'zone_2', 
+                'name': 'Anomaly Zone 2',
+                'confidence': 0.76,
+                'mineral_type': 'Quartz',
+                'bounding_box': {
+                    'x': 521,
+                    'y': 289,
+                    'width': 167,
+                    'height': 134
+                },
+                'center_coordinates': {
+                    'x': 604,
+                    'y': 356
+                },
+                'characteristics': [
+                    'Glassy luster',
+                    'Hexagonal structure',
+                    'Translucent appearance',
+                    'High hardness'
+                ],
+                'composition': {
+                    'silicon_dioxide': 0.98,
+                    'impurities': 0.02
+                }
             },
-            'area_percentage': round((patch_width * patch_height) / (img_width * img_height) * 100, 2),
-            'color_analysis': {
-                'dominant_color': random.choice(['red', 'brown', 'black', 'gray', 'yellow', 'green']),
-                'contrast_level': round(random.uniform(0.3, 0.9), 3),
-                'brightness': round(random.uniform(0.2, 0.8), 3)
-            },
-            'texture_features': {
-                'roughness': round(random.uniform(0.1, 0.9), 3),
-                'uniformity': round(random.uniform(0.2, 0.8), 3),
-                'edge_density': round(random.uniform(0.3, 0.9), 3)
+            {
+                'id': 'zone_3',
+                'name': 'Anomaly Zone 3', 
+                'confidence': 0.82,
+                'mineral_type': 'Feldspar',
+                'bounding_box': {
+                    'x': 123,
+                    'y': 387,
+                    'width': 201,
+                    'height': 156
+                },
+                'center_coordinates': {
+                    'x': 223,
+                    'y': 465
+                },
+                'characteristics': [
+                    'Vitreous luster',
+                    'Tabular crystals',
+                    'Pink-white coloration',
+                    'Good cleavage'
+                ],
+                'composition': {
+                    'potassium_feldspar': 0.87,
+                    'plagioclase': 0.13
+                }
             }
-        }
-        patches.append(patch)
+        ]
+    else:
+        # Generate random anomaly zones for other files
+        mineral_types = ['Quartz', 'Feldspar', 'Pyrite', 'Calcite', 'Mica', 'Olivine', 'Magnetite']
+        
+        for i in range(3):  # Always 3 zones as requested
+            zone_width = random.randint(120, 250)
+            zone_height = random.randint(100, 200)
+            x = random.randint(50, 700 - zone_width)
+            y = random.randint(50, 500 - zone_height)
+            
+            anomaly_zones.append({
+                'id': f'zone_{i+1}',
+                'name': f'Anomaly Zone {i+1}',
+                'confidence': round(random.uniform(0.70, 0.95), 2),
+                'mineral_type': random.choice(mineral_types),
+                'bounding_box': {
+                    'x': x,
+                    'y': y,
+                    'width': zone_width,
+                    'height': zone_height
+                },
+                'center_coordinates': {
+                    'x': x + zone_width // 2,
+                    'y': y + zone_height // 2
+                },
+                'characteristics': [
+                    'Crystalline structure',
+                    'Distinctive coloration',
+                    'Visible texture patterns',
+                    'Chemical composition markers'
+                ],
+                'composition': {
+                    'primary_mineral': round(random.uniform(0.75, 0.95), 2),
+                    'secondary_minerals': round(random.uniform(0.05, 0.25), 2)
+                }
+            })
     
-    # Sort patches by confidence score (highest first)
-    patches.sort(key=lambda x: x['confidence'], reverse=True)
+    # Sort zones by confidence score (highest first)
+    anomaly_zones.sort(key=lambda x: x['confidence'], reverse=True)
+    
+    # Create a placeholder overlay image path
+    # In a real implementation, this would be generated by the ML model
+    overlay_image_path = f"uploads/overlays/{file.name.rsplit('.', 1)[0]}_overlay.png"
+    
+    # Mock image dimensions
+    img_width = 800 if is_mineral_demo else random.randint(800, 2000)
+    img_height = 600 if is_mineral_demo else random.randint(600, 1500)
     
     # Generate overall analysis metrics
     analysis_results = {
-        'total_patches': len(patches),
-        'high_confidence_patches': len([p for p in patches if p['confidence'] > 0.85]),
-        'critical_anomalies': len([p for p in patches if p['severity'] == 'Critical']),
+        'total_zones': len(anomaly_zones),
+        'high_confidence_zones': len([z for z in anomaly_zones if z['confidence'] > 0.85]),
+        'mineral_types_detected': len(set(z['mineral_type'] for z in anomaly_zones)),
         'processing_time': round(random.uniform(2.1, 12.5), 2),
         'image_quality': {
             'resolution': f"{img_width}x{img_height}",
@@ -211,12 +290,12 @@ def process_image(file):
         },
         'coverage_analysis': {
             'scanned_area_percentage': round(random.uniform(92.0, 99.5), 1),
-            'anomaly_density': round(len(patches) / ((img_width * img_height) / 100000), 3),
+            'anomaly_density': round(len(anomaly_zones) / ((img_width * img_height) / 100000), 3),
             'spatial_distribution': random.choice(['Clustered', 'Scattered', 'Edge-concentrated', 'Center-concentrated'])
         },
         'baseline_comparison': {
-            'baseline_detections': random.randint(1, max(1, len(patches) - 2)),
-            'nika_detections': len(patches),
+            'baseline_detections': random.randint(1, max(1, len(anomaly_zones) - 1)),
+            'nika_detections': len(anomaly_zones),
             'improvement_rate': round(random.uniform(25.0, 65.0), 1),
             'false_positive_reduction': round(random.uniform(40.0, 70.0), 1)
         }
@@ -224,7 +303,9 @@ def process_image(file):
     
     return {
         'status': 'success',
-        'patches': patches,
+        'anomaly_zones': anomaly_zones,
+        'overlay_image_path': overlay_image_path,
+        'original_image_path': f"uploads/{file.name}",
         'analysis_results': analysis_results,
         'file_info': {
             'filename': file.name,
@@ -232,13 +313,49 @@ def process_image(file):
             'format': file.name.split('.')[-1].upper(),
             'processed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         },
-        'recommendations': generate_recommendations(patches)
+        'recommendations': generate_mineral_recommendations(anomaly_zones)
     }
+
+
+def generate_mineral_recommendations(anomaly_zones):
+    """
+    Generate recommendations based on detected mineral anomaly zones.
+    
+    Args:
+        anomaly_zones: List of detected anomaly zones
+        
+    Returns:
+        list: List of recommendation strings
+    """
+    recommendations = []
+    
+    high_confidence_zones = [z for z in anomaly_zones if z['confidence'] > 0.85]
+    mineral_types = [z['mineral_type'] for z in anomaly_zones]
+    
+    if high_confidence_zones:
+        recommendations.append(f"🔍 {len(high_confidence_zones)} high-confidence mineral zones detected")
+    
+    if 'Pyrite' in mineral_types:
+        recommendations.append("⚠️ Pyrite detected - monitor for potential sulfide oxidation")
+    
+    if 'Quartz' in mineral_types:
+        recommendations.append("💎 Quartz formations identified - potential economic interest")
+    
+    if 'Feldspar' in mineral_types:
+        recommendations.append("🏔️ Feldspar presence indicates igneous rock formation")
+    
+    if len(set(mineral_types)) > 2:
+        recommendations.append("🌟 Diverse mineral composition - complex geological formation")
+    
+    recommendations.append("📊 Consider detailed geochemical analysis for confirmation")
+    recommendations.append("📍 Mark locations for field verification")
+    
+    return recommendations
 
 
 def generate_recommendations(patches):
     """
-    Generate recommendations based on detected anomalies.
+    Legacy function for backward compatibility.
     
     Args:
         patches: List of detected anomaly patches
@@ -246,6 +363,9 @@ def generate_recommendations(patches):
     Returns:
         list: List of recommendation strings
     """
+    if not patches:
+        return ["✅ No anomalies detected in uploaded data"]
+        
     recommendations = []
     
     critical_patches = [p for p in patches if p['severity'] == 'Critical']
@@ -466,16 +586,50 @@ def _generate_image_report_content(results, styles, heading_style):
     # Executive Summary
     story.append(Paragraph("Executive Summary", heading_style))
     analysis = results.get('analysis_results', {})
+    anomaly_zones = results.get('anomaly_zones', [])
     
     summary_text = f"""
-    NIKA's computer vision system has analyzed the uploaded image, detecting {analysis.get('total_patches', 0)} anomaly patches 
-    with {analysis.get('high_confidence_patches', 0)} high-confidence detections. The analysis was completed in 
-    {analysis.get('processing_time', 0)} seconds with an overall detection accuracy of 
-    {analysis.get('detection_metrics', {}).get('precision', 0):.3f}.
+    NIKA's advanced ML vision system has analyzed the uploaded mineral image, detecting {analysis.get('total_zones', len(anomaly_zones))} 
+    anomaly zones with {analysis.get('high_confidence_zones', 0)} high-confidence mineral identifications. The analysis identified 
+    {analysis.get('mineral_types_detected', 0)} different mineral types in {analysis.get('processing_time', 0)} seconds with 
+    precision accuracy of {analysis.get('detection_metrics', {}).get('precision', 0):.1f}%.
     """
     
     story.append(Paragraph(summary_text.strip(), styles['Normal']))
     story.append(Spacer(1, 0.3*inch))
+    
+    # Detected Mineral Zones
+    story.append(Paragraph("Detected Mineral Zones", heading_style))
+    
+    if anomaly_zones:
+        zone_data = [['Zone', 'Mineral Type', 'Confidence', 'Coordinates', 'Key Characteristics']]
+        
+        for i, zone in enumerate(anomaly_zones[:3]):  # Show top 3 zones
+            characteristics = ', '.join(zone.get('characteristics', [])[:2])
+            coords = f"({zone.get('center_coordinates', {}).get('x', 0)}, {zone.get('center_coordinates', {}).get('y', 0)})"
+            zone_data.append([
+                f"Zone {i+1}",
+                zone.get('mineral_type', 'Unknown'),
+                f"{zone.get('confidence', 0):.1f}%",
+                coords,
+                characteristics
+            ])
+        
+        zone_table = Table(zone_data, colWidths=[0.8*inch, 1.2*inch, 1*inch, 1*inch, 2*inch])
+        zone_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dc2626')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        
+        story.append(zone_table)
+        story.append(Spacer(1, 0.3*inch))
     
     # Detection Metrics
     story.append(Paragraph("Detection Performance", heading_style))
