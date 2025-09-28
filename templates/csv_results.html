@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}CSV Analysis Results - NIKA{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <h1 class="h3 mb-1">CSV Analysis Results</h1>
+                    <p class="text-muted">File: {{ results.file_info.filename }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'download_report' %}?type=csv" class="btn btn-success me-2">
+                        <i class="fas fa-download"></i> Download PDF Report
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Records</h5>
+                    <h2 class="display-6">{{ results.metrics.total_records|floatformat:0 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Anomalies Found</h5>
+                    <h2 class="display-6">{{ results.metrics.anomalies_detected }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Processing Time</h5>
+                    <h2 class="display-6">{{ results.metrics.processing_time }}s</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">F1 Score</h5>
+                    <h2 class="display-6">{{ results.metrics.nika_metrics.f1_score }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Comparison -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Performance Comparison: NIKA vs Baseline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Baseline Methods</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>F1 Score:</strong> {{ results.metrics.baseline_metrics.f1_score }}</li>
+                                <li><strong>Precision:</strong> {{ results.metrics.baseline_metrics.precision }}</li>
+                                <li><strong>Recall:</strong> {{ results.metrics.baseline_metrics.recall }}</li>
+                                <li><strong>Accuracy:</strong> {{ results.metrics.baseline_metrics.accuracy }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success">NIKA Advanced Detection</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>F1 Score:</strong> <span class="text-success">{{ results.metrics.nika_metrics.f1_score }}</span> 
+                                    <small class="badge bg-success">+{{ results.metrics.improvement_percentage.f1_score }}%</small></li>
+                                <li><strong>Precision:</strong> <span class="text-success">{{ results.metrics.nika_metrics.precision }}</span></li>
+                                <li><strong>Recall:</strong> <span class="text-success">{{ results.metrics.nika_metrics.recall }}</span></li>
+                                <li><strong>Accuracy:</strong> <span class="text-success">{{ results.metrics.nika_metrics.accuracy }}</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Data Quality</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-muted">Completeness</small>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ results.metrics.data_quality.completeness|floatformat:0 }}%"></div>
+                        </div>
+                        <small>{{ results.metrics.data_quality.completeness|floatformat:1 }}%</small>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Consistency</small>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ results.metrics.data_quality.consistency|floatformat:0 }}%"></div>
+                        </div>
+                        <small>{{ results.metrics.data_quality.consistency|floatformat:1 }}%</small>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Validity</small>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width: {{ results.metrics.data_quality.validity|floatformat:0 }}%"></div>
+                        </div>
+                        <small>{{ results.metrics.data_quality.validity|floatformat:1 }}%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Anomalies Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🚨 Detected Anomalies</h5>
+                </div>
+                <div class="card-body">
+                    {% if results.anomalies %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Type</th>
+                                        <th>Severity</th>
+                                        <th>Confidence</th>
+                                        <th>Timestamp</th>
+                                        <th>Affected Columns</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for anomaly in results.anomalies %}
+                                        <tr>
+                                            <td><code>{{ anomaly.id }}</code></td>
+                                            <td>{{ anomaly.type }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if anomaly.severity == 'Critical' %}bg-danger
+                                                    {% elif anomaly.severity == 'High' %}bg-warning
+                                                    {% elif anomaly.severity == 'Medium' %}bg-info
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ anomaly.severity }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                        <div class="progress-bar bg-success" 
+                                                             style="width: {{ anomaly.confidence|floatformat:0 }}%"></div>
+                                                    </div>
+                                                    <small>{{ anomaly.confidence|floatformat:3 }}</small>
+                                                </div>
+                                            </td>
+                                            <td><small>{{ anomaly.timestamp }}</small></td>
+                                            <td>
+                                                {% for column in anomaly.affected_columns %}
+                                                    <span class="badge bg-light text-dark">{{ column }}</span>
+                                                {% endfor %}
+                                            </td>
+                                            <td><small>{{ anomaly.description }}</small></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                            <h5>No Anomalies Detected</h5>
+                            <p class="text-muted">Your data appears to be clean and normal.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+.progress {
+    height: 8px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+{% endblock %}
