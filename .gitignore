@@ -57,6 +57,20 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Test and temporary files
+test_*.py
+temp_*.jpg
+temp_*.png
+*_test.py
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
 # Translations
 *.mo
 *.pot
@@ -190,6 +204,25 @@ cache/
 # Database dumps
 *.sql
 *.dump
+
+# ===========================
+# ML Models & Weights
+# ===========================
+
+# SAM (Segment Anything Model) weights - large binary files
+nika_pipeline/content/sam_weights/*.pth
+*.pth
+
+# Scikit-learn model files
+scikit_models/*.pkl
+*.pkl
+
+# Other ML model formats
+*.h5
+*.hdf5
+*.pb
+*.onnx
+*.pt
 
 # ===========================
 # IDE & Editor Files

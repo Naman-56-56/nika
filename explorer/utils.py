@@ -4,6 +4,20 @@ from datetime import datetime, timedelta
 import io
 from django.http import HttpResponse
 
+# Import ML utilities
+try:
+    from .ml_utils import (
+        process_csv as ml_process_csv,
+        process_image as ml_process_image, 
+        generate_report as ml_generate_report,
+        generate_mineral_recommendations,
+        generate_recommendations
+    )
+    ML_UTILS_AVAILABLE = True
+except ImportError as e:
+    ML_UTILS_AVAILABLE = False
+    print(f"ML utilities not available: {e}")
+
 try:
     from reportlab.lib.pagesizes import letter, A4
     from reportlab.lib import colors
@@ -21,6 +35,52 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
 
 def process_csv(file):
+    """
+    Process CSV files - uses ML models if available, fallback otherwise.
+    
+    Args:
+        file: Uploaded CSV file
+        
+    Returns:
+        dict: Contains anomalies list and metrics dictionary
+    """
+    if ML_UTILS_AVAILABLE:
+        return ml_process_csv(file)
+    else:
+        return process_csv_fallback(file)
+
+def process_image(file):
+    """
+    Process image files - uses SAM model if available, fallback otherwise.
+    
+    Args:
+        file: Uploaded image file
+        
+    Returns:
+        dict: Contains anomaly zones, confidence scores, mineral predictions, and overlay image path
+    """
+    if ML_UTILS_AVAILABLE:
+        return ml_process_image(file)
+    else:
+        return process_image_fallback(file)
+
+def generate_report(results, report_type='csv'):
+    """
+    Generate PDF report - uses ML-aware version if available.
+    
+    Args:
+        results: Dict containing analysis results
+        report_type: 'csv' or 'image'
+        
+    Returns:
+        HttpResponse: PDF file response
+    """
+    if ML_UTILS_AVAILABLE:
+        return ml_generate_report(results, report_type)
+    else:
+        return generate_report_fallback(results, report_type)
+
+def process_csv_fallback(file):
     """
     Mock function to process CSV files and return fake anomalies and metrics.
     
@@ -121,7 +181,7 @@ def process_csv(file):
     }
 
 
-def process_image(file):
+def process_image_fallback(file):
     """
     Mock ML function to process image files and return mineral anomaly zones with confidence scores.
     
@@ -134,119 +194,31 @@ def process_image(file):
     import os
     from django.conf import settings
     
-    # Check if this is the special mineral_1 demo file
-    is_mineral_demo = 'mineral_1' in file.name.lower()
-    
     # Generate mock anomaly zones (3 zones as requested)
     anomaly_zones = []
+    mineral_types = ['Quartz', 'Feldspar', 'Pyrite', 'Calcite', 'Mica', 'Olivine', 'Magnetite']
     
-    if is_mineral_demo:
-        # Hardcoded mock data for mineral_1 demo
-        anomaly_zones = [
-            {
-                'id': 'zone_1',
-                'name': 'Anomaly Zone 1',
-                'confidence': 0.91,
-                'mineral_type': 'Pyrite',
-                'bounding_box': {
-                    'x': 245,
-                    'y': 158,
-                    'width': 185,
-                    'height': 142
-                },
-                'center_coordinates': {
-                    'x': 337,
-                    'y': 229
-                },
-                'characteristics': [
-                    'High metallic luster',
-                    'Cubic crystal structure',
-                    'Brassy yellow color',
-                    'Magnetic susceptibility'
-                ],
-                'composition': {
-                    'iron_sulfide': 0.92,
-                    'trace_elements': 0.08
-                }
-            },
-            {
-                'id': 'zone_2', 
-                'name': 'Anomaly Zone 2',
-                'confidence': 0.76,
-                'mineral_type': 'Quartz',
-                'bounding_box': {
-                    'x': 521,
-                    'y': 289,
-                    'width': 167,
-                    'height': 134
-                },
-                'center_coordinates': {
-                    'x': 604,
-                    'y': 356
-                },
-                'characteristics': [
-                    'Glassy luster',
-                    'Hexagonal structure',
-                    'Translucent appearance',
-                    'High hardness'
-                ],
-                'composition': {
-                    'silicon_dioxide': 0.98,
-                    'impurities': 0.02
-                }
-            },
-            {
-                'id': 'zone_3',
-                'name': 'Anomaly Zone 3', 
-                'confidence': 0.82,
-                'mineral_type': 'Feldspar',
-                'bounding_box': {
-                    'x': 123,
-                    'y': 387,
-                    'width': 201,
-                    'height': 156
-                },
-                'center_coordinates': {
-                    'x': 223,
-                    'y': 465
-                },
-                'characteristics': [
-                    'Vitreous luster',
-                    'Tabular crystals',
-                    'Pink-white coloration',
-                    'Good cleavage'
-                ],
-                'composition': {
-                    'potassium_feldspar': 0.87,
-                    'plagioclase': 0.13
-                }
-            }
-        ]
-    else:
-        # Generate random anomaly zones for other files
-        mineral_types = ['Quartz', 'Feldspar', 'Pyrite', 'Calcite', 'Mica', 'Olivine', 'Magnetite']
+    for i in range(3):  # Always 3 zones as requested
+        zone_width = random.randint(120, 250)
+        zone_height = random.randint(100, 200)
+        x = random.randint(50, 700 - zone_width)
+        y = random.randint(50, 500 - zone_height)
         
-        for i in range(3):  # Always 3 zones as requested
-            zone_width = random.randint(120, 250)
-            zone_height = random.randint(100, 200)
-            x = random.randint(50, 700 - zone_width)
-            y = random.randint(50, 500 - zone_height)
-            
-            anomaly_zones.append({
-                'id': f'zone_{i+1}',
-                'name': f'Anomaly Zone {i+1}',
-                'confidence': round(random.uniform(0.70, 0.95), 2),
-                'mineral_type': random.choice(mineral_types),
-                'bounding_box': {
-                    'x': x,
-                    'y': y,
-                    'width': zone_width,
-                    'height': zone_height
-                },
-                'center_coordinates': {
-                    'x': x + zone_width // 2,
-                    'y': y + zone_height // 2
-                },
+        anomaly_zones.append({
+            'id': f'zone_{i+1}',
+            'name': f'Anomaly Zone {i+1}',
+            'confidence': round(random.uniform(0.70, 0.95), 2),
+            'mineral_type': random.choice(mineral_types),
+            'bounding_box': {
+                'x': x,
+                'y': y,
+                'width': zone_width,
+                'height': zone_height
+            },
+            'center_coordinates': {
+                'x': x + zone_width // 2,
+                'y': y + zone_height // 2
+            },
                 'characteristics': [
                     'Crystalline structure',
                     'Distinctive coloration',
@@ -267,8 +239,8 @@ def process_image(file):
     overlay_image_path = f"uploads/overlays/{file.name.rsplit('.', 1)[0]}_overlay.png"
     
     # Mock image dimensions
-    img_width = 800 if is_mineral_demo else random.randint(800, 2000)
-    img_height = 600 if is_mineral_demo else random.randint(600, 1500)
+    img_width = random.randint(800, 2000)
+    img_height = random.randint(600, 1500)
     
     # Generate overall analysis metrics
     analysis_results = {
@@ -395,7 +367,7 @@ def generate_recommendations(patches):
     return recommendations
 
 
-def generate_report(results, report_type='csv'):
+def generate_report_fallback(results, report_type='csv'):
     """
     Generate a PDF report using ReportLab based on analysis results.
     

@@ -174,8 +174,166 @@
 <!-- CSV Results Tab -->
 <div id="csv-results" class="tab-content">
     <div class="space-y-6">
-        <!-- Metrics Overview -->
-        <div id="csv-metrics" class="metrics-grid">
+        {% if csv_results %}
+        <!-- ML-Powered Metrics Overview -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">{{ csv_results.metrics.total_records }}</div>
+                <div class="metric-label">Records Processed</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ csv_results.metrics.anomalies_detected }}</div>
+                <div class="metric-label">ML Anomalies Found</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ csv_results.metrics.anomaly_rate|default:0 }}%</div>
+                <div class="metric-label">Anomaly Rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ csv_results.metrics.nika_metrics.f1_score|floatformat:3 }}</div>
+                <div class="metric-label">ML F1-Score</div>
+            </div>
+        </div>
+        
+        <!-- ML Performance Comparison -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">ML Model Performance</h4>
+                </div>
+                <div class="card-content">
+                    {% if csv_plots.performance_comparison %}
+                    <img src="data:image/png;base64,{{ csv_plots.performance_comparison }}" 
+                         alt="Performance Comparison" class="w-full h-auto">
+                    {% else %}
+                    <div class="flex items-center justify-center h-48 text-muted">
+                        <p>Performance chart loading...</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Anomaly Severity Distribution</h4>
+                </div>
+                <div class="card-content">
+                    {% if csv_plots.severity_distribution %}
+                    <img src="data:image/png;base64,{{ csv_plots.severity_distribution }}" 
+                         alt="Severity Distribution" class="w-full h-auto">
+                    {% else %}
+                    <div class="flex items-center justify-center h-48 text-muted">
+                        <p>Severity chart loading...</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Confidence Score Distribution</h4>
+                </div>
+                <div class="card-content">
+                    {% if csv_plots.confidence_distribution %}
+                    <img src="data:image/png;base64,{{ csv_plots.confidence_distribution }}" 
+                         alt="Confidence Distribution" class="w-full h-auto">
+                    {% else %}
+                    <div class="flex items-center justify-center h-48 text-muted">
+                        <p>Confidence chart loading...</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Detection Timeline</h4>
+                </div>
+                <div class="card-content">
+                    {% if csv_plots.timeline %}
+                    <img src="data:image/png;base64,{{ csv_plots.timeline }}" 
+                         alt="Detection Timeline" class="w-full h-auto">
+                    {% else %}
+                    <div class="flex items-center justify-center h-48 text-muted">
+                        <p>Timeline chart loading...</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- ML Model Information -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">ML Model Information</h4>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-muted rounded-lg">
+                        <h5 class="font-semibold mb-2">Model Type</h5>
+                        <p class="text-sm">{{ csv_results.metrics.ml_metrics.model_used|default:"Isolation Forest + Random Forest" }}</p>
+                    </div>
+                    <div class="p-4 bg-muted rounded-lg">
+                        <h5 class="font-semibold mb-2">Feature Count</h5>
+                        <p class="text-sm">{{ csv_results.metrics.ml_metrics.feature_count|default:"N/A" }} features analyzed</p>
+                    </div>
+                    <div class="p-4 bg-muted rounded-lg">
+                        <h5 class="font-semibold mb-2">Data Completeness</h5>
+                        <p class="text-sm">{{ csv_results.metrics.ml_metrics.data_completeness|default:"N/A" }}% complete</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detailed Anomalies List -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">ML-Detected Anomalies</h4>
+            </div>
+            <div class="card-content">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left py-2">ID</th>
+                                <th class="text-left py-2">Type</th>
+                                <th class="text-left py-2">Severity</th>
+                                <th class="text-left py-2">Confidence</th>
+                                <th class="text-left py-2">Row</th>
+                                <th class="text-left py-2">ML Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for anomaly in csv_results.anomalies|slice:":10" %}
+                            <tr class="border-b hover:bg-muted/50">
+                                <td class="py-2">{{ anomaly.id }}</td>
+                                <td class="py-2">{{ anomaly.type }}</td>
+                                <td class="py-2">
+                                    <span class="px-2 py-1 rounded text-xs
+                                        {% if anomaly.severity == 'Critical' %}bg-red-100 text-red-800
+                                        {% elif anomaly.severity == 'High' %}bg-orange-100 text-orange-800
+                                        {% elif anomaly.severity == 'Medium' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-green-100 text-green-800{% endif %}">
+                                        {{ anomaly.severity }}
+                                    </span>
+                                </td>
+                                <td class="py-2">{{ anomaly.confidence|floatformat:3 }}</td>
+                                <td class="py-2">{{ anomaly.row_index|default:"N/A" }}</td>
+                                <td class="py-2">{{ anomaly.anomaly_score|default:"N/A"|floatformat:3 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- Empty State -->
+        <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-value">0</div>
                 <div class="metric-label">Files Processed</div>
@@ -190,72 +348,18 @@
             </div>
         </div>
         
-        <!-- Charts Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Anomaly Distribution Chart -->
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Anomaly Distribution</h4>
-                </div>
-                <div class="card-content">
-                    <div class="chart-container">
-                        <canvas id="anomaly-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Trend Analysis Chart -->
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Detection Trends</h4>
-                </div>
-                <div class="card-content">
-                    <div class="chart-container">
-                        <canvas id="trend-chart"></canvas>
-                    </div>
-                </div>
+        <div class="flex items-center justify-center py-12 text-muted">
+            <div class="text-center">
+                <i data-lucide="file-search" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                <h3 class="text-xl font-medium mb-2">No CSV Data Processed</h3>
+                <p class="text-muted">Upload a CSV file to see ML-powered anomaly detection results</p>
+                <button onclick="showTab('upload')" class="btn btn-primary mt-4">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    Upload CSV
+                </button>
             </div>
         </div>
-        
-        <!-- Map -->
-        <div class="card">
-            <div class="card-header">
-                <div class="flex justify-between items-center">
-                    <h4 class="card-title">Geographic Distribution</h4>
-                    <div class="flex gap-2">
-                        <button class="btn btn-sm btn-secondary">
-                            <i data-lucide="layers" class="w-4 h-4"></i>
-                            Layers
-                        </button>
-                        <button class="btn btn-sm btn-secondary">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            Export
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="card-content p-0">
-                <div class="map-container" id="csv-map"></div>
-            </div>
-        </div>
-        
-        <!-- Anomalies List -->
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title">Detected Anomalies</h4>
-            </div>
-            <div class="card-content">
-                <div id="anomalies-list">
-                    <div class="flex items-center justify-center py-8 text-muted">
-                        <div class="text-center">
-                            <i data-lucide="file-search" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
-                            <p>No anomalies detected yet</p>
-                            <p class="text-sm">Upload a CSV file to begin analysis</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -382,8 +486,8 @@
             </div>
         </div>
         
-        <!-- Analysis Metrics -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Analysis Metrics with ML Charts -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="metric-card">
                 <div class="metric-value">{{ image_results.analysis_results.total_zones }}</div>
                 <div class="metric-label">Zones Detected</div>
@@ -401,6 +505,86 @@
                 <div class="metric-label">Precision Score</div>
             </div>
         </div>
+        
+        <!-- ML Analysis Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Mineral Confidence</h4>
+                </div>
+                <div class="card-content">
+                    {% if image_plots.mineral_confidence %}
+                    <img src="data:image/png;base64,{{ image_plots.mineral_confidence }}" 
+                         alt="Mineral Confidence" class="w-full h-auto">
+                    {% else %}
+                    <div class="flex items-center justify-center h-48 text-muted">
+                        <p>Confidence chart loading...</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Zone Area Distribution</h4>
+                </div>
+                <div class="card-content">
+                    {% if image_plots.area_distribution %}
+                    <img src="data:image/png;base64,{{ image_plots.area_distribution }}" 
+                         alt="Area Distribution" class="w-full h-auto">
+                    {% else %}
+                    <div class="flex items-center justify-center h-48 text-muted">
+                        <p>Area chart loading...</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">ML Detection Metrics</h4>
+                </div>
+                <div class="card-content">
+                    {% if image_plots.ml_metrics_radar %}
+                    <img src="data:image/png;base64,{{ image_plots.ml_metrics_radar }}" 
+                         alt="ML Metrics Radar" class="w-full h-auto">
+                    {% else %}
+                    <div class="flex items-center justify-center h-48 text-muted">
+                        <p>Metrics chart loading...</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- SAM Model Information -->
+        {% if image_results.analysis_results.sam_metrics %}
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">SAM Model Performance</h4>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="p-4 bg-muted rounded-lg">
+                        <h5 class="font-semibold mb-2">Model Type</h5>
+                        <p class="text-sm">{{ image_results.analysis_results.sam_metrics.model_type }}</p>
+                    </div>
+                    <div class="p-4 bg-muted rounded-lg">
+                        <h5 class="font-semibold mb-2">Masks Generated</h5>
+                        <p class="text-sm">{{ image_results.analysis_results.sam_metrics.total_masks_generated }}</p>
+                    </div>
+                    <div class="p-4 bg-muted rounded-lg">
+                        <h5 class="font-semibold mb-2">Average Stability</h5>
+                        <p class="text-sm">{{ image_results.analysis_results.sam_metrics.average_stability|floatformat:3 }}</p>
+                    </div>
+                    <div class="p-4 bg-muted rounded-lg">
+                        <h5 class="font-semibold mb-2">Processing Time</h5>
+                        <p class="text-sm">{{ image_results.analysis_results.processing_time }}s</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
         {% else %}
         <!-- Empty State -->

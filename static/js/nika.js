@@ -848,13 +848,21 @@ window.NIKA = {
             tabButton.click();
         }
     } else {
-        // Check if we have image results to show
-        const hasImageResults = document.querySelector('#image-results .card');
-        if (hasImageResults && !hasImageResults.querySelector('.text-center')) {
-            // Switch to image results tab if we have results
+        // Check if we have results to show and auto-switch
+        const hasImageResults = document.querySelector('#image-results .card .card-content img');
+        const hasCsvResults = document.querySelector('#csv-results table tbody tr');
+        
+        if (hasImageResults) {
+            // Switch to image results tab if we have image results
             const imageTab = document.querySelector('.tab-button[data-tab="image-results"]');
             if (imageTab) {
                 imageTab.click();
+            }
+        } else if (hasCsvResults) {
+            // Switch to CSV results tab if we have CSV results
+            const csvTab = document.querySelector('.tab-button[data-tab="csv-results"]');
+            if (csvTab) {
+                csvTab.click();
             }
         } else {
             // Default to upload tab
