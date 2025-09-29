@@ -154,9 +154,6 @@ venv.bak/
 # !*/migrations/__init__.py
 
 # Django static files (if using collectstatic)
-/static/
-staticfiles/
-/staticfiles/
 
 # Django media files
 media/
